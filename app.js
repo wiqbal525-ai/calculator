@@ -25,6 +25,7 @@ const numberFormatter = new Intl.NumberFormat('en-CA', {
 });
 
 const form = document.querySelector('#calculatorForm');
+const conventionalComparisonForm = document.querySelector('#conventionalComparisonForm');
 const rentComparisonForm = document.querySelector('#rentComparisonForm');
 const scheduleBody = document.querySelector('#scheduleBody');
 const resetDefaultsButton = document.querySelector('#resetDefaultsButton');
@@ -120,11 +121,28 @@ function readInputs() {
         purchasePrice: Math.max(0, inputValues.purchasePrice),
         downPayment: Math.max(0, inputValues.downPayment),
         profitRateAnnual: Math.max(0, inputValues.profitRateAnnual) / 100,
-        conventionalRateAnnual: Math.max(0, inputValues.conventionalRateAnnual) / 100,
         termYears: Math.max(1, Math.round(inputValues.termYears || 1)),
         propertyTaxMonthly: Math.max(0, inputValues.propertyTaxMonthly),
         qualificationRatio: Math.max(0.01, inputValues.qualificationRatio / 100),
         monthlyPrepayment: Math.max(0, inputValues.monthlyPrepayment),
+    };
+}
+
+function readConventionalInputs() {
+    const raw = new FormData(conventionalComparisonForm);
+    const inputValues = Object.fromEntries(
+        Array.from(raw.entries()).map(([key, value]) => [key, Number(value)])
+    );
+
+    return {
+        purchasePrice: Math.max(0, inputValues.comparePurchasePrice),
+        downPayment: Math.max(0, inputValues.compareDownPayment),
+        profitRateAnnual: Math.max(0, inputValues.compareProfitRateAnnual) / 100,
+        conventionalRateAnnual: Math.max(0, inputValues.conventionalRateAnnual) / 100,
+        termYears: Math.max(1, Math.round(inputValues.compareTermYears || 1)),
+        propertyTaxMonthly: 0,
+        qualificationRatio: 0.30,
+        monthlyPrepayment: Math.max(0, inputValues.compareMonthlyPrepayment),
     };
 }
 
@@ -426,7 +444,6 @@ function renderSummary(result, inputs) {
     outputElements.finalOwnership.textContent = percentFormatter.format(result.finalOwnership);
     outputElements.totalSharePurchased.textContent = currencyFormatter.format(result.totalSharePurchased);
     outputElements.latestQuarterTransfer.textContent = percentFormatter.format(result.latestQuarterTransfer || 0);
-    renderComparison(result);
     renderRentComparison(result.rentComparison);
 
     const messages = [];
@@ -737,12 +754,15 @@ function setActiveTab(tabName) {
 
 function updateCalculator() {
     const inputs = readInputs();
+    const conventionalInputs = readConventionalInputs();
     const rentInputs = readRentInputs();
     const result = buildSchedule(inputs);
+    const conventionalResult = buildSchedule(conventionalInputs);
     const rentTabMusharakaInputs = buildRentTabInputs(rentInputs);
     const rentTabResult = buildSchedule(rentTabMusharakaInputs);
     result.rentComparison = buildRentComparison(rentTabMusharakaInputs, rentTabResult, rentInputs);
     renderSummary(result, inputs);
+    renderComparison(conventionalResult);
     renderSchedule(result.schedule);
 }
 
@@ -757,6 +777,7 @@ function resetDefaults() {
 }
 
 form.addEventListener('input', updateCalculator);
+conventionalComparisonForm.addEventListener('input', updateCalculator);
 rentComparisonForm.addEventListener('input', updateCalculator);
 resetDefaultsButton.addEventListener('click', resetDefaults);
 scheduleTableWrap.addEventListener('scroll', syncStickyHeaderPosition);

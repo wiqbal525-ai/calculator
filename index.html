@@ -31,6 +31,13 @@
         <button class="tab-button active" type="button" data-tab="calculator">
           Musharaka Calculator
         </button>
+        <button
+          class="tab-button"
+          type="button"
+          data-tab="conventional-comparison"
+        >
+          Musharaka vs Conventional
+        </button>
         <button class="tab-button" type="button" data-tab="rent-comparison">
           Musharaka vs Rent Toronto
         </button>
@@ -78,17 +85,6 @@
                   <input
                     id="profitRateAnnual"
                     name="profitRateAnnual"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value="6.75"
-                  />
-                </label>
-                <label>
-                  <span>Conventional mortgage rate %</span>
-                  <input
-                    id="conventionalRateAnnual"
-                    name="conventionalRateAnnual"
                     type="number"
                     min="0"
                     step="0.01"
@@ -219,6 +215,127 @@
               <p id="validationMessage" class="validation-note"></p>
             </section>
 
+            <section class="panel table-panel">
+              <div class="panel-header">
+                <h2>Monthly Schedule</h2>
+                <p class="panel-note">
+                  Quarterly values are shown on period 1, 4, 7, and so on.
+                  Quarterly Sale Price is modeled as three monthly installments,
+                  and Quarterly Unit Transfer is the real three-month cumulative
+                  share purchase amount.
+                </p>
+              </div>
+              <div
+                id="stickyScheduleHeader"
+                class="sticky-table-header"
+                aria-hidden="true"
+              ></div>
+              <div id="scheduleTableWrap" class="table-wrap">
+                <table id="scheduleTable">
+                  <thead id="scheduleTableHead">
+                    <tr>
+                      <th>Period</th>
+                      <th>Beginning Musharaka Fund's Contribution Balance</th>
+                      <th>Total Installment</th>
+                      <th>Payment Towards Fund's Profit</th>
+                      <th>Payment Towards Share Cost Price</th>
+                      <th>Ending Fund's Contribution Balance</th>
+                      <th>Quarterly Sale Price</th>
+                      <th>Quarterly Share Transfer %</th>
+                      <th>Quarterly Unit Transfer</th>
+                      <th>Annual % Transfer</th>
+                      <th>Client Ownership Percentage</th>
+                      <th>Pre-payment</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scheduleBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="conventional-comparison">
+          <div class="layout-grid">
+            <section class="panel input-panel">
+              <div class="panel-header">
+                <h2>Conventional Comparison Inputs</h2>
+                <p class="panel-note">
+                  Set the Musharaka assumptions and the conventional mortgage
+                  rate you want to compare against.
+                </p>
+              </div>
+              <form id="conventionalComparisonForm" class="form-grid">
+                <label>
+                  <span>Purchase price</span>
+                  <input
+                    id="comparePurchasePrice"
+                    name="comparePurchasePrice"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="700000"
+                  />
+                </label>
+                <label>
+                  <span>Down payment</span>
+                  <input
+                    id="compareDownPayment"
+                    name="compareDownPayment"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="200000"
+                  />
+                </label>
+                <label>
+                  <span>Musharaka profit rate %</span>
+                  <input
+                    id="compareProfitRateAnnual"
+                    name="compareProfitRateAnnual"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="6.75"
+                  />
+                </label>
+                <label>
+                  <span>Conventional mortgage rate %</span>
+                  <input
+                    id="conventionalRateAnnual"
+                    name="conventionalRateAnnual"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="6.75"
+                  />
+                </label>
+                <label>
+                  <span>Term in years</span>
+                  <input
+                    id="compareTermYears"
+                    name="compareTermYears"
+                    type="number"
+                    min="1"
+                    max="40"
+                    step="1"
+                    value="25"
+                  />
+                </label>
+                <label>
+                  <span>Monthly prepayment</span>
+                  <input
+                    id="compareMonthlyPrepayment"
+                    name="compareMonthlyPrepayment"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value="0"
+                  />
+                </label>
+              </form>
+            </section>
+
             <section class="panel comparison-panel">
               <div class="panel-header">
                 <h2>Musharaka vs Conventional</h2>
@@ -303,44 +420,6 @@
                     </tr>
                   </thead>
                   <tbody id="comparisonBody"></tbody>
-                </table>
-              </div>
-            </section>
-
-            <section class="panel table-panel">
-              <div class="panel-header">
-                <h2>Monthly Schedule</h2>
-                <p class="panel-note">
-                  Quarterly values are shown on period 1, 4, 7, and so on.
-                  Quarterly Sale Price is modeled as three monthly installments,
-                  and Quarterly Unit Transfer is the real three-month cumulative
-                  share purchase amount.
-                </p>
-              </div>
-              <div
-                id="stickyScheduleHeader"
-                class="sticky-table-header"
-                aria-hidden="true"
-              ></div>
-              <div id="scheduleTableWrap" class="table-wrap">
-                <table id="scheduleTable">
-                  <thead id="scheduleTableHead">
-                    <tr>
-                      <th>Period</th>
-                      <th>Beginning Musharaka Fund's Contribution Balance</th>
-                      <th>Total Installment</th>
-                      <th>Payment Towards Fund's Profit</th>
-                      <th>Payment Towards Share Cost Price</th>
-                      <th>Ending Fund's Contribution Balance</th>
-                      <th>Quarterly Sale Price</th>
-                      <th>Quarterly Share Transfer %</th>
-                      <th>Quarterly Unit Transfer</th>
-                      <th>Annual % Transfer</th>
-                      <th>Client Ownership Percentage</th>
-                      <th>Pre-payment</th>
-                    </tr>
-                  </thead>
-                  <tbody id="scheduleBody"></tbody>
                 </table>
               </div>
             </section>
