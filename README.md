@@ -2,7 +2,7 @@
 
 This project now includes a standalone browser-based diminishing Musharaka calculator that you can run locally on your computer without Google Sheets.
 
-It is also prepared for GitHub Pages deployment as a static site.
+It can also be published on GitHub Pages as a static site.
 
 ## Files
 
@@ -23,25 +23,22 @@ No install step is required.
 
 This folder is ready to be deployed as a static GitHub Pages site.
 
-### What is included
-
-- `.github/workflows/deploy-pages.yml` deploys the site automatically when you push to the `main` branch
-- `.nojekyll` tells GitHub Pages to serve the site as plain static files
-
 ### Steps
 
 1. Create a new GitHub repository.
 2. Upload all files from this folder to the repository root.
 3. Push the repository to the `main` branch.
 4. In GitHub, open `Settings > Pages`.
-5. Under `Build and deployment`, make sure `Source` is set to `GitHub Actions`.
-6. Wait for the `Deploy GitHub Pages` workflow to finish.
-7. Open the published site URL from the workflow or Pages settings screen.
+5. Under `Build and deployment`, set `Source` to `Deploy from a branch`.
+6. Choose branch `main` and folder `/ (root)`.
+7. Save and wait for GitHub Pages to publish the site.
+8. Open the published site URL from the Pages settings screen.
 
 ### Notes
 
 - The site uses relative file paths, so it works correctly on a GitHub Pages project site.
-- If your default branch is not `main`, update `.github/workflows/deploy-pages.yml` before pushing.
+- If your default branch is not `main`, select that branch in the Pages settings instead.
+- `.nojekyll` tells GitHub Pages to serve the site as plain static files.
 - `Code.gs` and `appsscript.json` can stay in the repo, but they are not used by the static site.
 
 ## What the local version does
