@@ -70,7 +70,18 @@
                   />
                 </label>
                 <label>
-                  <span>Down payment</span>
+                  <span class="label-with-help"
+                    >Down payment
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="monthly-payment"
+                      data-explanation-tab="calculator"
+                      aria-label="Explain how monthly payment is calculated"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="downPayment"
                     name="downPayment"
@@ -81,7 +92,18 @@
                   />
                 </label>
                 <label>
-                  <span>Profit rate %</span>
+                  <span class="label-with-help"
+                    >Profit rate %
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="monthly-payment"
+                      data-explanation-tab="calculator"
+                      aria-label="Explain how profit rate affects the monthly payment"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="profitRateAnnual"
                     name="profitRateAnnual"
@@ -92,7 +114,18 @@
                   />
                 </label>
                 <label>
-                  <span>Term in years</span>
+                  <span class="label-with-help"
+                    >Term in years
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="monthly-payment"
+                      data-explanation-tab="calculator"
+                      aria-label="Explain how term affects the monthly payment"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="termYears"
                     name="termYears"
@@ -115,7 +148,40 @@
                   />
                 </label>
                 <label>
-                  <span>Qualification ratio %</span>
+                  <span class="label-with-help"
+                    >Monthly condo fee
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="required-income"
+                      data-explanation-tab="calculator"
+                      aria-label="Explain how condo fees affect affordability"
+                    >
+                      ?
+                    </button></span
+                  >
+                  <input
+                    id="monthlyCondoFee"
+                    name="monthlyCondoFee"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value="0"
+                  />
+                </label>
+                <label>
+                  <span class="label-with-help"
+                    >Qualification ratio %
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="required-income"
+                      data-explanation-tab="calculator"
+                      aria-label="Explain how required income is calculated"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="qualificationRatio"
                     name="qualificationRatio"
@@ -127,7 +193,18 @@
                   />
                 </label>
                 <label>
-                  <span>Monthly prepayment</span>
+                  <span class="label-with-help"
+                    >Monthly prepayment
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="share-purchase"
+                      data-explanation-tab="calculator"
+                      aria-label="Explain how prepayment affects share purchase"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="monthlyPrepayment"
                     name="monthlyPrepayment"
@@ -162,6 +239,16 @@
                     >Estimated monthly property tax</span
                   >
                   <strong id="propertyTaxValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label">Monthly condo fee</span>
+                  <strong id="condoFeeValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label"
+                    >Total monthly qualifying cost</span
+                  >
+                  <strong id="qualifyingHousingCostValue"></strong>
                 </article>
                 <article class="summary-card">
                   <span class="summary-label">Required monthly income</span>
@@ -217,13 +304,39 @@
 
             <section class="panel table-panel">
               <div class="panel-header">
-                <h2>Monthly Schedule</h2>
-                <p class="panel-note">
-                  Quarterly values are shown on period 1, 4, 7, and so on.
-                  Quarterly Sale Price is modeled as three monthly installments,
-                  and Quarterly Unit Transfer is the real three-month cumulative
-                  share purchase amount.
-                </p>
+                <div>
+                  <h2 id="scheduleSectionTitle">Monthly Schedule</h2>
+                  <p id="scheduleSectionNote" class="panel-note">
+                    Quarterly values are shown on period 1, 4, 7, and so on.
+                    Quarterly Sale Price is modeled as three monthly
+                    installments, and Quarterly Unit Transfer is the real
+                    three-month cumulative share purchase amount.
+                  </p>
+                </div>
+                <div
+                  class="schedule-view-toggle"
+                  role="tablist"
+                  aria-label="Schedule view"
+                >
+                  <button
+                    id="monthlyScheduleButton"
+                    class="schedule-view-button active"
+                    type="button"
+                    data-schedule-view="monthly"
+                    aria-selected="true"
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    id="yearlyScheduleButton"
+                    class="schedule-view-button"
+                    type="button"
+                    data-schedule-view="yearly"
+                    aria-selected="false"
+                  >
+                    Yearly
+                  </button>
+                </div>
               </div>
               <div
                 id="stickyScheduleHeader"
@@ -232,22 +345,7 @@
               ></div>
               <div id="scheduleTableWrap" class="table-wrap">
                 <table id="scheduleTable">
-                  <thead id="scheduleTableHead">
-                    <tr>
-                      <th>Period</th>
-                      <th>Beginning Musharaka Fund's Contribution Balance</th>
-                      <th>Total Installment</th>
-                      <th>Payment Towards Fund's Profit</th>
-                      <th>Payment Towards Share Cost Price</th>
-                      <th>Ending Fund's Contribution Balance</th>
-                      <th>Quarterly Sale Price</th>
-                      <th>Quarterly Share Transfer %</th>
-                      <th>Quarterly Unit Transfer</th>
-                      <th>Annual % Transfer</th>
-                      <th>Client Ownership Percentage</th>
-                      <th>Pre-payment</th>
-                    </tr>
-                  </thead>
+                  <thead id="scheduleTableHead"></thead>
                   <tbody id="scheduleBody"></tbody>
                 </table>
               </div>
@@ -289,7 +387,18 @@
                   />
                 </label>
                 <label>
-                  <span>Musharaka profit rate %</span>
+                  <span class="label-with-help"
+                    >Musharaka profit rate %
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="comparison-payment-gap"
+                      data-explanation-tab="conventional-comparison"
+                      aria-label="Explain the comparison monthly payment gap"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="compareProfitRateAnnual"
                     name="compareProfitRateAnnual"
@@ -300,7 +409,18 @@
                   />
                 </label>
                 <label>
-                  <span>Conventional mortgage rate %</span>
+                  <span class="label-with-help"
+                    >Conventional mortgage rate %
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="comparison-payment-gap"
+                      data-explanation-tab="conventional-comparison"
+                      aria-label="Explain the comparison monthly payment gap"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="conventionalRateAnnual"
                     name="conventionalRateAnnual"
@@ -323,7 +443,18 @@
                   />
                 </label>
                 <label>
-                  <span>Monthly prepayment</span>
+                  <span class="label-with-help"
+                    >Monthly prepayment
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="comparison-total-cost"
+                      data-explanation-tab="conventional-comparison"
+                      aria-label="Explain how prepayment affects total financing cost"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="compareMonthlyPrepayment"
                     name="compareMonthlyPrepayment"
@@ -517,7 +648,18 @@
                   />
                 </label>
                 <label>
-                  <span>Monthly condo fees</span>
+                  <span class="label-with-help"
+                    >Monthly condo fees
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="rent-owner-outflow"
+                      data-explanation-tab="rent-comparison"
+                      aria-label="Explain owner monthly outflow"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="rentMonthlyCondoFees"
                     name="rentMonthlyCondoFees"
@@ -550,7 +692,18 @@
                   />
                 </label>
                 <label>
-                  <span>Monthly prepayment</span>
+                  <span class="label-with-help"
+                    >Monthly prepayment
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="rent-owner-outflow"
+                      data-explanation-tab="rent-comparison"
+                      aria-label="Explain owner monthly outflow"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="rentMonthlyPrepayment"
                     name="rentMonthlyPrepayment"
@@ -561,7 +714,18 @@
                   />
                 </label>
                 <label>
-                  <span>Starting monthly rent</span>
+                  <span class="label-with-help"
+                    >Starting monthly rent
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="rent-gap"
+                      data-explanation-tab="rent-comparison"
+                      aria-label="Explain the rent comparison monthly gap"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="startingMonthlyRent"
                     name="startingMonthlyRent"
@@ -638,7 +802,18 @@
                   />
                 </label>
                 <label>
-                  <span>Comparison horizon years</span>
+                  <span class="label-with-help"
+                    >Comparison horizon years
+                    <button
+                      class="help-trigger"
+                      type="button"
+                      data-explanation-target="rent-verdict"
+                      data-explanation-tab="rent-comparison"
+                      aria-label="Explain the 10 year verdict calculation"
+                    >
+                      ?
+                    </button></span
+                  >
                   <input
                     id="comparisonHorizonYears"
                     name="comparisonHorizonYears"
@@ -768,6 +943,97 @@
           </div>
         </section>
       </main>
+
+      <section
+        class="panel explainer-panel"
+        aria-labelledby="calculationGuideHeading"
+      >
+        <div class="panel-header explainer-header">
+          <div>
+            <h2 id="calculationGuideHeading">How Values Are Calculated</h2>
+            <p class="panel-note">
+              Search common questions and open a live explanation for the
+              current tab using the numbers on screen.
+            </p>
+          </div>
+          <label class="explainer-search">
+            <span>Ask about a value</span>
+            <input
+              id="calculationQuestionSearch"
+              type="search"
+              placeholder="Try: monthly payment, stress test, rent gap"
+            />
+          </label>
+        </div>
+        <div class="explainer-layout">
+          <div
+            id="explanationTopicList"
+            class="explainer-topics"
+            role="list"
+          ></div>
+
+          <article class="explanation-answer" aria-live="polite">
+            <p id="explanationTabLabel" class="explanation-tab-label"></p>
+            <h3 id="explanationTitle">Select a question</h3>
+            <p id="explanationLead" class="explanation-lead">
+              Choose a topic to see the formula, the current numbers, and what
+              each input is doing.
+            </p>
+
+            <div class="explanation-block">
+              <span class="explanation-label">Formula</span>
+              <p id="explanationFormula" class="explanation-formula">-</p>
+            </div>
+
+            <div class="explanation-block">
+              <span class="explanation-label">Current calculation</span>
+              <p id="explanationCurrent" class="explanation-copy">-</p>
+            </div>
+
+            <div class="explanation-block">
+              <span class="explanation-label">Why it changes</span>
+              <p id="explanationWhy" class="explanation-copy">-</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <div id="explanationModal" class="explanation-modal" hidden>
+        <div class="explanation-modal-backdrop" data-modal-close></div>
+        <article
+          class="explanation-modal-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modalExplanationTitle"
+        >
+          <button
+            id="closeExplanationModalButton"
+            class="explanation-modal-close"
+            type="button"
+            aria-label="Close explanation popup"
+          >
+            Close
+          </button>
+          <p id="modalExplanationTabLabel" class="explanation-tab-label"></p>
+          <h3 id="modalExplanationTitle">Calculation details</h3>
+          <p id="modalExplanationLead" class="explanation-lead"></p>
+
+          <div class="explanation-block">
+            <span class="explanation-label">Formula</span>
+            <p id="modalExplanationFormula" class="explanation-formula"></p>
+          </div>
+
+          <div class="explanation-block">
+            <span class="explanation-label">Current calculation</span>
+            <p id="modalExplanationCurrent" class="explanation-copy"></p>
+          </div>
+
+          <div class="explanation-block">
+            <span class="explanation-label">Why it changes</span>
+            <p id="modalExplanationWhy" class="explanation-copy"></p>
+          </div>
+        </article>
+      </div>
     </div>
 
     <script src="app.js"></script>

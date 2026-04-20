@@ -217,6 +217,45 @@ label {
   font-size: 0.92rem;
 }
 
+.label-with-help,
+.th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.th-label {
+  white-space: normal;
+}
+
+.help-trigger {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(31, 106, 89, 0.2);
+  border-radius: 999px;
+  background: rgba(221, 236, 232, 0.85);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.help-trigger:hover,
+.help-trigger:focus-visible {
+  background: rgba(31, 106, 89, 0.95);
+  border-color: rgba(31, 106, 89, 0.95);
+  color: #f6f7f3;
+  outline: none;
+}
+
 input {
   width: 100%;
   border: 1px solid rgba(46, 40, 29, 0.12);
@@ -248,6 +287,32 @@ input:focus {
 .comparison-table-panel .panel-header,
 .verdict-panel .panel-header {
   align-items: flex-start;
+}
+
+.schedule-view-toggle {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(255, 250, 240, 0.72);
+  border: 1px solid rgba(74, 66, 52, 0.1);
+}
+
+.schedule-view-button {
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.schedule-view-button.active {
+  background: linear-gradient(135deg, rgba(31, 106, 89, 0.95), rgba(22, 90, 76, 0.95));
+  color: #f6f7f3;
 }
 
 .comparison-panel .panel-note,
@@ -419,6 +484,183 @@ input:focus {
   color: var(--danger);
 }
 
+.explainer-panel {
+  margin-top: 20px;
+}
+
+.explainer-header {
+  align-items: flex-end;
+}
+
+.explainer-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.4fr);
+  gap: 18px;
+}
+
+.explainer-search {
+  min-width: min(100%, 360px);
+}
+
+.explainer-search span {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.explainer-topics {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 10px;
+}
+
+.explainer-topic {
+  appearance: none;
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(46, 40, 29, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 252, 246, 0.9);
+  padding: 14px 16px;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.explainer-topic:hover,
+.explainer-topic:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(31, 106, 89, 0.35);
+}
+
+.explainer-topic.active {
+  background: linear-gradient(135deg, rgba(31, 106, 89, 0.95), rgba(22, 90, 76, 0.95));
+  border-color: rgba(31, 106, 89, 0.15);
+  color: #f6f7f3;
+}
+
+.explainer-topic-title {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+
+.explainer-topic-meta {
+  display: block;
+  font-size: 0.88rem;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.explainer-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.explanation-answer {
+  padding: 22px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 252, 246, 0.96), rgba(248, 242, 231, 0.98));
+  border: 1px solid rgba(46, 40, 29, 0.08);
+}
+
+.explanation-tab-label {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.explanation-answer h3 {
+  margin: 0 0 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.45rem;
+}
+
+.explanation-lead,
+.explanation-copy,
+.explanation-formula {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.explanation-formula {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.explanation-block + .explanation-block {
+  margin-top: 18px;
+}
+
+.explanation-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--highlight);
+}
+
+.explanation-modal[hidden] {
+  display: none;
+}
+
+.explanation-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.explanation-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(34, 27, 20, 0.38);
+  backdrop-filter: blur(4px);
+}
+
+.explanation-modal-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(640px, 100%);
+  max-height: min(78vh, 720px);
+  overflow: auto;
+  padding: 24px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(255, 252, 246, 0.99), rgba(248, 242, 231, 0.99));
+  border: 1px solid rgba(46, 40, 29, 0.08);
+  box-shadow: 0 24px 64px rgba(34, 27, 20, 0.18);
+}
+
+.explanation-modal-close {
+  appearance: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(46, 40, 29, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 252, 246, 0.92);
+  padding: 8px 12px;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.explanation-modal-close:hover,
+.explanation-modal-close:focus-visible {
+  border-color: rgba(31, 106, 89, 0.35);
+  outline: none;
+}
+
 .sticky-table-header {
   position: fixed;
   top: 12px;
@@ -430,6 +672,10 @@ input:focus {
   background: #f1e8d8;
   box-shadow: var(--shadow);
   pointer-events: none;
+}
+
+.sticky-table-header .help-trigger {
+  pointer-events: auto;
 }
 
 .sticky-table-header.visible {
@@ -529,7 +775,20 @@ tbody tr:hover {
     align-items: flex-start;
   }
 
+  .schedule-view-toggle {
+    width: 100%;
+  }
+
+  .schedule-view-button {
+    flex: 1 1 0;
+    text-align: center;
+  }
+
   .verdict-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .explainer-layout {
     grid-template-columns: 1fr;
   }
 
@@ -552,6 +811,20 @@ tbody tr:hover {
   .panel-header {
     flex-direction: column;
     align-items: start;
+  }
+
+  .explainer-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .explanation-modal {
+    padding: 14px;
+  }
+
+  .explanation-modal-dialog {
+    max-height: 84vh;
+    padding: 18px;
   }
 
   .verdict-reasons {
