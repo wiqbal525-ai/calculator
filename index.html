@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Musharaka Mortgage Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Local calculator</p>
+          <h1>Musharaka Mortgage Calculator</h1>
+          <p class="hero-copy">
+            A standalone diminishing Musharaka calculator you can open directly
+            in your browser. It estimates affordability, monthly profit and
+            share purchases, ownership growth, and a full payment schedule.
+          </p>
+        </div>
+        <div class="hero-badge">No Google Sheets required</div>
+      </header>
+
+      <nav class="tab-nav" aria-label="Calculator views">
+        <button class="tab-button active" type="button" data-tab="calculator">
+          Musharaka Calculator
+        </button>
+        <button class="tab-button" type="button" data-tab="rent-comparison">
+          Musharaka vs Rent Toronto
+        </button>
+      </nav>
+
+      <main class="tab-panels">
+        <section class="tab-panel active" data-panel="calculator">
+          <div class="layout-grid">
+            <section class="panel input-panel">
+              <div class="panel-header">
+                <h2>Financing Inputs</h2>
+                <button
+                  id="resetDefaultsButton"
+                  class="ghost-button"
+                  type="button"
+                >
+                  Reset defaults
+                </button>
+              </div>
+              <form id="calculatorForm" class="form-grid">
+                <label>
+                  <span>Purchase price</span>
+                  <input
+                    id="purchasePrice"
+                    name="purchasePrice"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="700000"
+                  />
+                </label>
+                <label>
+                  <span>Down payment</span>
+                  <input
+                    id="downPayment"
+                    name="downPayment"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="200000"
+                  />
+                </label>
+                <label>
+                  <span>Profit rate %</span>
+                  <input
+                    id="profitRateAnnual"
+                    name="profitRateAnnual"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="6.75"
+                  />
+                </label>
+                <label>
+                  <span>Conventional mortgage rate %</span>
+                  <input
+                    id="conventionalRateAnnual"
+                    name="conventionalRateAnnual"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="6.75"
+                  />
+                </label>
+                <label>
+                  <span>Term in years</span>
+                  <input
+                    id="termYears"
+                    name="termYears"
+                    type="number"
+                    min="1"
+                    max="40"
+                    step="1"
+                    value="25"
+                  />
+                </label>
+                <label>
+                  <span>Monthly property tax</span>
+                  <input
+                    id="propertyTaxMonthly"
+                    name="propertyTaxMonthly"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value="350"
+                  />
+                </label>
+                <label>
+                  <span>Qualification ratio %</span>
+                  <input
+                    id="qualificationRatio"
+                    name="qualificationRatio"
+                    type="number"
+                    min="1"
+                    max="100"
+                    step="0.1"
+                    value="30"
+                  />
+                </label>
+                <label>
+                  <span>Monthly prepayment</span>
+                  <input
+                    id="monthlyPrepayment"
+                    name="monthlyPrepayment"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value="0"
+                  />
+                </label>
+              </form>
+            </section>
+
+            <section class="panel summary-panel">
+              <div class="panel-header">
+                <h2>Affordability</h2>
+                <p class="panel-note">
+                  Stress-tested payment follows the screenshot logic: financing
+                  amount divided by total months.
+                </p>
+              </div>
+              <div class="summary-grid">
+                <article class="summary-card feature">
+                  <span class="summary-label">Monthly payment</span>
+                  <strong id="monthlyPaymentValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label">Stress tested payment</span>
+                  <strong id="stressTestedPaymentValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label"
+                    >Estimated monthly property tax</span
+                  >
+                  <strong id="propertyTaxValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label">Required monthly income</span>
+                  <strong id="requiredMonthlyIncomeValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label">Required annual income</span>
+                  <strong id="requiredAnnualIncomeValue"></strong>
+                </article>
+                <article class="summary-card">
+                  <span class="summary-label">Income multiple</span>
+                  <strong id="incomeMultipleValue"></strong>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel insights-panel">
+              <div class="panel-header">
+                <h2>Deal Snapshot</h2>
+                <p class="panel-note">
+                  These fields mirror the top-level information from your
+                  screenshots.
+                </p>
+              </div>
+              <div class="insights-grid">
+                <div>
+                  <span class="insight-label">Financing amount</span>
+                  <strong id="financingAmountValue"></strong>
+                </div>
+                <div>
+                  <span class="insight-label">Term months</span>
+                  <strong id="termMonthsValue"></strong>
+                </div>
+                <div>
+                  <span class="insight-label">Final balance</span>
+                  <strong id="finalBalanceValue"></strong>
+                </div>
+                <div>
+                  <span class="insight-label">Final ownership</span>
+                  <strong id="finalOwnershipValue"></strong>
+                </div>
+                <div>
+                  <span class="insight-label">Total share purchased</span>
+                  <strong id="totalSharePurchasedValue"></strong>
+                </div>
+                <div>
+                  <span class="insight-label">Approx quarterly transfer</span>
+                  <strong id="latestQuarterTransferValue"></strong>
+                </div>
+              </div>
+              <p id="validationMessage" class="validation-note"></p>
+            </section>
+
+            <section class="panel comparison-panel">
+              <div class="panel-header">
+                <h2>Musharaka vs Conventional</h2>
+                <p class="panel-note">
+                  Compare the same property, down payment, term, and monthly
+                  prepayment assumptions across both structures.
+                </p>
+              </div>
+              <div class="comparison-grid">
+                <article class="comparison-card musharaka">
+                  <span class="summary-label">Musharaka monthly payment</span>
+                  <strong id="compareMusharakaPaymentValue"></strong>
+                  <span class="comparison-meta"
+                    >Total financing cost:
+                    <span id="compareMusharakaCostValue"></span
+                  ></span>
+                </article>
+                <article class="comparison-card conventional">
+                  <span class="summary-label"
+                    >Conventional monthly payment</span
+                  >
+                  <strong id="compareConventionalPaymentValue"></strong>
+                  <span class="comparison-meta"
+                    >Total interest cost:
+                    <span id="compareConventionalCostValue"></span
+                  ></span>
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label">Monthly payment gap</span>
+                  <strong id="comparePaymentGapValue"></strong>
+                  <span class="comparison-meta"
+                    >Positive means conventional is higher</span
+                  >
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label">5-year balance gap</span>
+                  <strong id="compareFiveYearBalanceGapValue"></strong>
+                  <span class="comparison-meta"
+                    >Conventional balance minus Musharaka balance after 60
+                    months</span
+                  >
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label">5-year equity gap</span>
+                  <strong id="compareFiveYearEquityGapValue"></strong>
+                  <span class="comparison-meta"
+                    >Musharaka ownership minus conventional equity after 60
+                    months</span
+                  >
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label">Payoff month gap</span>
+                  <strong id="comparePayoffGapValue"></strong>
+                  <span class="comparison-meta"
+                    >Conventional payoff month minus Musharaka payoff
+                    month</span
+                  >
+                </article>
+              </div>
+            </section>
+
+            <section class="panel comparison-table-panel">
+              <div class="panel-header">
+                <h2>Yearly Comparison Over Time</h2>
+                <p class="panel-note">
+                  Year-end snapshot of remaining balance, ownership or equity,
+                  and cumulative financing cost for each structure.
+                </p>
+              </div>
+              <div class="table-wrap comparison-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Year</th>
+                      <th>Musharaka Balance</th>
+                      <th>Musharaka Ownership</th>
+                      <th>Musharaka Cumulative Cost</th>
+                      <th>Conventional Balance</th>
+                      <th>Conventional Equity</th>
+                      <th>Conventional Cumulative Cost</th>
+                      <th>Cost Gap</th>
+                    </tr>
+                  </thead>
+                  <tbody id="comparisonBody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel table-panel">
+              <div class="panel-header">
+                <h2>Monthly Schedule</h2>
+                <p class="panel-note">
+                  Quarterly values are shown on period 1, 4, 7, and so on.
+                  Quarterly Sale Price is modeled as three monthly installments,
+                  and Quarterly Unit Transfer is the real three-month cumulative
+                  share purchase amount.
+                </p>
+              </div>
+              <div
+                id="stickyScheduleHeader"
+                class="sticky-table-header"
+                aria-hidden="true"
+              ></div>
+              <div id="scheduleTableWrap" class="table-wrap">
+                <table id="scheduleTable">
+                  <thead id="scheduleTableHead">
+                    <tr>
+                      <th>Period</th>
+                      <th>Beginning Musharaka Fund's Contribution Balance</th>
+                      <th>Total Installment</th>
+                      <th>Payment Towards Fund's Profit</th>
+                      <th>Payment Towards Share Cost Price</th>
+                      <th>Ending Fund's Contribution Balance</th>
+                      <th>Quarterly Sale Price</th>
+                      <th>Quarterly Share Transfer %</th>
+                      <th>Quarterly Unit Transfer</th>
+                      <th>Annual % Transfer</th>
+                      <th>Client Ownership Percentage</th>
+                      <th>Pre-payment</th>
+                    </tr>
+                  </thead>
+                  <tbody id="scheduleBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="rent-comparison">
+          <div class="layout-grid">
+            <section class="panel input-panel">
+              <div class="panel-header">
+                <h2>Toronto Rent Comparison Inputs</h2>
+                <p class="panel-note">
+                  This tab has its own Musharaka assumptions and can switch
+                  between cash outflow only and net worth comparison.
+                </p>
+              </div>
+              <form id="rentComparisonForm" class="form-grid">
+                <div
+                  class="mode-toggle"
+                  role="radiogroup"
+                  aria-label="Rent comparison mode"
+                >
+                  <label class="mode-option">
+                    <input
+                      type="radio"
+                      name="comparisonMode"
+                      value="cash"
+                      checked
+                    />
+                    <span>Cash outflow only</span>
+                  </label>
+                  <label class="mode-option">
+                    <input
+                      type="radio"
+                      name="comparisonMode"
+                      value="networth"
+                    />
+                    <span>Net worth comparison</span>
+                  </label>
+                </div>
+                <label>
+                  <span>Purchase price</span>
+                  <input
+                    id="rentPurchasePrice"
+                    name="rentPurchasePrice"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="700000"
+                  />
+                </label>
+                <label>
+                  <span>Down payment</span>
+                  <input
+                    id="rentDownPayment"
+                    name="rentDownPayment"
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value="200000"
+                  />
+                </label>
+                <label>
+                  <span>Profit rate %</span>
+                  <input
+                    id="rentProfitRateAnnual"
+                    name="rentProfitRateAnnual"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="6.75"
+                  />
+                </label>
+                <label>
+                  <span>Term in years</span>
+                  <input
+                    id="rentTermYears"
+                    name="rentTermYears"
+                    type="number"
+                    min="1"
+                    max="40"
+                    step="1"
+                    value="25"
+                  />
+                </label>
+                <label>
+                  <span>Monthly property tax</span>
+                  <input
+                    id="rentPropertyTaxMonthly"
+                    name="rentPropertyTaxMonthly"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value="350"
+                  />
+                </label>
+                <label>
+                  <span>Monthly condo fees</span>
+                  <input
+                    id="rentMonthlyCondoFees"
+                    name="rentMonthlyCondoFees"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value="0"
+                  />
+                </label>
+                <label>
+                  <span>Monthly utilities</span>
+                  <input
+                    id="rentMonthlyUtilities"
+                    name="rentMonthlyUtilities"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value="250"
+                  />
+                </label>
+                <label>
+                  <span>Monthly home insurance</span>
+                  <input
+                    id="rentMonthlyHomeInsurance"
+                    name="rentMonthlyHomeInsurance"
+                    type="number"
+                    min="0"
+                    step="10"
+                    value="120"
+                  />
+                </label>
+                <label>
+                  <span>Monthly prepayment</span>
+                  <input
+                    id="rentMonthlyPrepayment"
+                    name="rentMonthlyPrepayment"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value="0"
+                  />
+                </label>
+                <label>
+                  <span>Starting monthly rent</span>
+                  <input
+                    id="startingMonthlyRent"
+                    name="startingMonthlyRent"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value="2800"
+                  />
+                </label>
+                <label>
+                  <span>Annual rent increase %</span>
+                  <input
+                    id="annualRentIncrease"
+                    name="annualRentIncrease"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="3"
+                  />
+                </label>
+                <label>
+                  <span>Monthly renter insurance</span>
+                  <input
+                    id="rentMonthlyRenterInsurance"
+                    name="rentMonthlyRenterInsurance"
+                    type="number"
+                    min="0"
+                    step="5"
+                    value="35"
+                  />
+                </label>
+                <label>
+                  <span>One-time moving cost</span>
+                  <input
+                    id="rentMovingCostOneTime"
+                    name="rentMovingCostOneTime"
+                    type="number"
+                    min="0"
+                    step="100"
+                    value="1500"
+                  />
+                </label>
+                <label>
+                  <span>Annual maintenance % of home value</span>
+                  <input
+                    id="maintenanceRateAnnual"
+                    name="maintenanceRateAnnual"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="1"
+                  />
+                </label>
+                <label>
+                  <span>Home appreciation %</span>
+                  <input
+                    id="homeAppreciationAnnual"
+                    name="homeAppreciationAnnual"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="3.5"
+                  />
+                </label>
+                <label>
+                  <span>Renter savings return %</span>
+                  <input
+                    id="renterReturnAnnual"
+                    name="renterReturnAnnual"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value="5"
+                  />
+                </label>
+                <label>
+                  <span>Comparison horizon years</span>
+                  <input
+                    id="comparisonHorizonYears"
+                    name="comparisonHorizonYears"
+                    type="number"
+                    min="1"
+                    max="40"
+                    step="1"
+                    value="10"
+                  />
+                </label>
+              </form>
+            </section>
+
+            <section class="panel comparison-panel">
+              <div class="panel-header">
+                <h2>Musharaka vs Renting in Toronto</h2>
+                <p class="panel-note" id="rentComparisonModeNote">
+                  Owner costs include the Musharaka installment, monthly
+                  property tax, condo fees, utilities, insurance, annual
+                  maintenance, and optional prepayment.
+                </p>
+              </div>
+              <div class="comparison-grid">
+                <article class="comparison-card musharaka">
+                  <span class="summary-label">Monthly owner outflow</span>
+                  <strong id="rentOwnerMonthlyOutflowValue"></strong>
+                  <span class="comparison-meta"
+                    >Installment + property tax + condo fees + utilities +
+                    insurance + maintenance + prepayment</span
+                  >
+                </article>
+                <article class="comparison-card conventional">
+                  <span class="summary-label">Monthly renter outflow</span>
+                  <strong id="rentMonthlyRenterOutflowValue"></strong>
+                  <span class="comparison-meta"
+                    >Starting rent + renter insurance. Moving cost is tracked as
+                    a one-time renter cash outflow.</span
+                  >
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label">Monthly outflow gap</span>
+                  <strong id="rentMonthlyGapValue"></strong>
+                  <span class="comparison-meta"
+                    >Positive means ownership costs more than renting
+                    today</span
+                  >
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label" id="rentMetricOneLabel"
+                    >Owner cumulative outflow</span
+                  >
+                  <strong id="rentMetricOneValue"></strong>
+                  <span class="comparison-meta" id="rentMetricOneMeta"></span>
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label" id="rentMetricTwoLabel"
+                    >Renter cumulative outflow</span
+                  >
+                  <strong id="rentMetricTwoValue"></strong>
+                  <span class="comparison-meta" id="rentMetricTwoMeta"></span>
+                </article>
+                <article class="comparison-card neutral">
+                  <span class="summary-label" id="rentMetricThreeLabel"
+                    >Cumulative outflow gap</span
+                  >
+                  <strong id="rentMetricThreeValue"></strong>
+                  <span class="comparison-meta" id="rentMetricThreeMeta"></span>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel verdict-panel">
+              <div class="panel-header">
+                <h2>10-Year Verdict</h2>
+                <p class="panel-note" id="rentVerdictModeNote"></p>
+              </div>
+              <div class="verdict-layout">
+                <article class="verdict-hero" id="rentVerdictCard">
+                  <span
+                    class="verdict-kicker"
+                    id="rentVerdictWindowValue"
+                  ></span>
+                  <h3 id="rentVerdictHeadlineValue"></h3>
+                  <p id="rentVerdictSummaryValue"></p>
+                  <strong id="rentVerdictGapValue"></strong>
+                </article>
+                <div class="verdict-reasons">
+                  <article class="verdict-reason">
+                    <span class="summary-label" id="rentVerdictReasonOneLabel"
+                      >Owner cumulative outflow</span
+                    >
+                    <strong id="rentVerdictReasonOneValue"></strong>
+                    <p id="rentVerdictReasonOneNote"></p>
+                  </article>
+                  <article class="verdict-reason">
+                    <span class="summary-label" id="rentVerdictReasonTwoLabel"
+                      >Renter cumulative outflow</span
+                    >
+                    <strong id="rentVerdictReasonTwoValue"></strong>
+                    <p id="rentVerdictReasonTwoNote"></p>
+                  </article>
+                  <article class="verdict-reason">
+                    <span class="summary-label" id="rentVerdictReasonThreeLabel"
+                      >Year-end rent level</span
+                    >
+                    <strong id="rentVerdictReasonThreeValue"></strong>
+                    <p id="rentVerdictReasonThreeNote"></p>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel comparison-table-panel">
+              <div class="panel-header">
+                <h2>Rent vs Musharaka Over Time</h2>
+                <p class="panel-note" id="rentTableModeNote"></p>
+              </div>
+              <div class="table-wrap comparison-table-wrap">
+                <table>
+                  <thead>
+                    <tr id="rentComparisonHeadRow"></tr>
+                  </thead>
+                  <tbody id="rentComparisonBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
