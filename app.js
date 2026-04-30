@@ -1,1316 +1,870 @@
-const defaultInputs = {
-    purchasePrice: 700000,
-    downPayment: 200000,
-    profitRateAnnual: 6.75,
-    termYears: 25,
-    propertyTaxMonthly: 350,
-    monthlyCondoFee: 0,
-    qualificationRatio: 30,
-    monthlyPrepayment: 0,
-};
+function num(id) {
+    return Number(document.getElementById(id).value || 0);
+}
 
-const currencyFormatter = new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: 'CAD',
-    maximumFractionDigits: 2,
-});
+function pmt(monthlyRate, nper, pv) {
+    if (nper <= 0) return 0;
+    if (monthlyRate === 0) return -(pv / nper);
+    const pow = Math.pow(1 + monthlyRate, nper);
+    return -((pv * monthlyRate * pow) / (pow - 1));
+}
 
-const percentFormatter = new Intl.NumberFormat('en-CA', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
-
-const numberFormatter = new Intl.NumberFormat('en-CA', {
-    maximumFractionDigits: 0,
-});
-
-const form = document.querySelector('#calculatorForm');
-const conventionalComparisonForm = document.querySelector('#conventionalComparisonForm');
-const rentComparisonForm = document.querySelector('#rentComparisonForm');
-const scheduleBody = document.querySelector('#scheduleBody');
-const resetDefaultsButton = document.querySelector('#resetDefaultsButton');
-const scheduleTableWrap = document.querySelector('#scheduleTableWrap');
-const scheduleTable = document.querySelector('#scheduleTable');
-const scheduleTableHead = document.querySelector('#scheduleTableHead');
-const stickyScheduleHeader = document.querySelector('#stickyScheduleHeader');
-const scheduleSectionTitle = document.querySelector('#scheduleSectionTitle');
-const scheduleSectionNote = document.querySelector('#scheduleSectionNote');
-const scheduleViewButtons = Array.from(document.querySelectorAll('[data-schedule-view]'));
-const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
-const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
-const explanationSearchInput = document.querySelector('#calculationQuestionSearch');
-const explanationTopicList = document.querySelector('#explanationTopicList');
-const explanationTabLabel = document.querySelector('#explanationTabLabel');
-const explanationTitle = document.querySelector('#explanationTitle');
-const explanationLead = document.querySelector('#explanationLead');
-const explanationFormula = document.querySelector('#explanationFormula');
-const explanationCurrent = document.querySelector('#explanationCurrent');
-const explanationWhy = document.querySelector('#explanationWhy');
-const explainerPanel = document.querySelector('.explainer-panel');
-const explanationModal = document.querySelector('#explanationModal');
-const closeExplanationModalButton = document.querySelector('#closeExplanationModalButton');
-const modalExplanationTabLabel = document.querySelector('#modalExplanationTabLabel');
-const modalExplanationTitle = document.querySelector('#modalExplanationTitle');
-const modalExplanationLead = document.querySelector('#modalExplanationLead');
-const modalExplanationFormula = document.querySelector('#modalExplanationFormula');
-const modalExplanationCurrent = document.querySelector('#modalExplanationCurrent');
-const modalExplanationWhy = document.querySelector('#modalExplanationWhy');
-
-const outputElements = {
-    monthlyPayment: document.querySelector('#monthlyPaymentValue'),
-    stressTestedPayment: document.querySelector('#stressTestedPaymentValue'),
-    propertyTax: document.querySelector('#propertyTaxValue'),
-    condoFee: document.querySelector('#condoFeeValue'),
-    qualifyingHousingCost: document.querySelector('#qualifyingHousingCostValue'),
-    requiredMonthlyIncome: document.querySelector('#requiredMonthlyIncomeValue'),
-    requiredAnnualIncome: document.querySelector('#requiredAnnualIncomeValue'),
-    incomeMultiple: document.querySelector('#incomeMultipleValue'),
-    financingAmount: document.querySelector('#financingAmountValue'),
-    termMonths: document.querySelector('#termMonthsValue'),
-    finalBalance: document.querySelector('#finalBalanceValue'),
-    finalOwnership: document.querySelector('#finalOwnershipValue'),
-    totalSharePurchased: document.querySelector('#totalSharePurchasedValue'),
-    latestQuarterTransfer: document.querySelector('#latestQuarterTransferValue'),
-    validationMessage: document.querySelector('#validationMessage'),
-    compareMusharakaPayment: document.querySelector('#compareMusharakaPaymentValue'),
-    compareMusharakaCost: document.querySelector('#compareMusharakaCostValue'),
-    compareConventionalPayment: document.querySelector('#compareConventionalPaymentValue'),
-    compareConventionalCost: document.querySelector('#compareConventionalCostValue'),
-    comparePaymentGap: document.querySelector('#comparePaymentGapValue'),
-    compareFiveYearBalanceGap: document.querySelector('#compareFiveYearBalanceGapValue'),
-    compareFiveYearEquityGap: document.querySelector('#compareFiveYearEquityGapValue'),
-    comparePayoffGap: document.querySelector('#comparePayoffGapValue'),
-    rentComparisonModeNote: document.querySelector('#rentComparisonModeNote'),
-    rentOwnerMonthlyOutflow: document.querySelector('#rentOwnerMonthlyOutflowValue'),
-    rentMonthlyRenterOutflow: document.querySelector('#rentMonthlyRenterOutflowValue'),
-    rentMonthlyGap: document.querySelector('#rentMonthlyGapValue'),
-    rentMetricOneLabel: document.querySelector('#rentMetricOneLabel'),
-    rentMetricOneValue: document.querySelector('#rentMetricOneValue'),
-    rentMetricOneMeta: document.querySelector('#rentMetricOneMeta'),
-    rentMetricTwoLabel: document.querySelector('#rentMetricTwoLabel'),
-    rentMetricTwoValue: document.querySelector('#rentMetricTwoValue'),
-    rentMetricTwoMeta: document.querySelector('#rentMetricTwoMeta'),
-    rentMetricThreeLabel: document.querySelector('#rentMetricThreeLabel'),
-    rentMetricThreeValue: document.querySelector('#rentMetricThreeValue'),
-    rentMetricThreeMeta: document.querySelector('#rentMetricThreeMeta'),
-    rentVerdictModeNote: document.querySelector('#rentVerdictModeNote'),
-    rentVerdictWindow: document.querySelector('#rentVerdictWindowValue'),
-    rentVerdictHeadline: document.querySelector('#rentVerdictHeadlineValue'),
-    rentVerdictSummary: document.querySelector('#rentVerdictSummaryValue'),
-    rentVerdictGap: document.querySelector('#rentVerdictGapValue'),
-    rentVerdictReasonOneLabel: document.querySelector('#rentVerdictReasonOneLabel'),
-    rentVerdictReasonOneValue: document.querySelector('#rentVerdictReasonOneValue'),
-    rentVerdictReasonOneNote: document.querySelector('#rentVerdictReasonOneNote'),
-    rentVerdictReasonTwoLabel: document.querySelector('#rentVerdictReasonTwoLabel'),
-    rentVerdictReasonTwoValue: document.querySelector('#rentVerdictReasonTwoValue'),
-    rentVerdictReasonTwoNote: document.querySelector('#rentVerdictReasonTwoNote'),
-    rentVerdictReasonThreeLabel: document.querySelector('#rentVerdictReasonThreeLabel'),
-    rentVerdictReasonThreeValue: document.querySelector('#rentVerdictReasonThreeValue'),
-    rentVerdictReasonThreeNote: document.querySelector('#rentVerdictReasonThreeNote'),
-    rentTableModeNote: document.querySelector('#rentTableModeNote'),
-};
-const comparisonBody = document.querySelector('#comparisonBody');
-const rentComparisonBody = document.querySelector('#rentComparisonBody');
-const rentComparisonHeadRow = document.querySelector('#rentComparisonHeadRow');
-const tabLabels = {
-    calculator: 'Musharaka Calculator',
-    'conventional-comparison': 'Musharaka vs Conventional',
-    'rent-comparison': 'Musharaka vs Rent Toronto',
-};
-const explanationState = {
-    activeTab: 'calculator',
-    selectedTopicId: null,
-    filter: '',
-};
-const scheduleViewState = {
-    current: 'monthly',
-};
-let latestExplanationContext = null;
-
-function pmt(periodicRate, periods, presentValue) {
-    if (periods <= 0) {
-        return 0;
+function parseMonthAmountLines(text) {
+    const map = new Map();
+    const lines = text.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+    for (const line of lines) {
+        const [mStr, vStr] = line.split(",").map((x) => x.trim());
+        const month = Number(mStr);
+        const value = Number(vStr);
+        if (Number.isFinite(month) && month >= 1 && Number.isFinite(value) && value >= 0) {
+            map.set(month, value);
+        }
     }
+    return map;
+}
 
-    if (periodicRate === 0) {
-        return presentValue / periods;
+function parseResets(text, initialRate) {
+    const rows = [];
+    const lines = text.split(/\r?\n/).map((x) => x.trim()).filter(Boolean);
+    for (const line of lines) {
+        const [mStr, rStr] = line.split(",").map((x) => x.trim());
+        const month = Number(mStr);
+        const annualRatePct = Number(rStr);
+        if (Number.isFinite(month) && month >= 1 && Number.isFinite(annualRatePct) && annualRatePct >= 0) {
+            rows.push({ month, annualRate: annualRatePct / 100 });
+        }
     }
-
-    return (periodicRate * presentValue) / (1 - Math.pow(1 + periodicRate, -periods));
-}
-
-function clampCurrency(value) {
-    return Math.max(0, Math.round((value + Number.EPSILON) * 100) / 100);
-}
-
-function roundCurrency(value) {
-    return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function formatPercentValue(value, digits = 2) {
-    return `${(value * 100).toFixed(digits)}%`;
-}
-
-function formatSignedCurrency(value) {
-    if (value > 0) {
-        return `+${currencyFormatter.format(value)}`;
+    if (!rows.some((r) => r.month === 1)) {
+        rows.push({ month: 1, annualRate: initialRate });
     }
-
-    if (value < 0) {
-        return `-${currencyFormatter.format(Math.abs(value))}`;
-    }
-
-    return currencyFormatter.format(0);
+    rows.sort((a, b) => a.month - b.month);
+    return rows.filter((r, i) => i === 0 || r.month !== rows[i - 1].month);
 }
 
-function formatSignedPercent(value) {
-    if (value > 0) {
-        return `+${percentFormatter.format(value)}`;
-    }
-
-    if (value < 0) {
-        return `-${percentFormatter.format(Math.abs(value))}`;
-    }
-
-    return percentFormatter.format(0);
+function round2(x) {
+    return Math.round((x + Number.EPSILON) * 100) / 100;
 }
 
-function readInputs() {
-    const raw = new FormData(form);
-    const inputValues = Object.fromEntries(
-        Array.from(raw.entries()).map(([key, value]) => [key, Number(value)])
-    );
-
-    return {
-        purchasePrice: Math.max(0, inputValues.purchasePrice),
-        downPayment: Math.max(0, inputValues.downPayment),
-        profitRateAnnual: Math.max(0, inputValues.profitRateAnnual) / 100,
-        termYears: Math.max(1, Math.round(inputValues.termYears || 1)),
-        propertyTaxMonthly: Math.max(0, inputValues.propertyTaxMonthly),
-        monthlyCondoFee: Math.max(0, inputValues.monthlyCondoFee),
-        qualificationRatio: Math.max(0.01, inputValues.qualificationRatio / 100),
-        monthlyPrepayment: Math.max(0, inputValues.monthlyPrepayment),
-    };
+function money(x) {
+    return new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2 }).format(x);
 }
 
-function readConventionalInputs() {
-    const raw = new FormData(conventionalComparisonForm);
-    const inputValues = Object.fromEntries(
-        Array.from(raw.entries()).map(([key, value]) => [key, Number(value)])
-    );
-
-    return {
-        purchasePrice: Math.max(0, inputValues.comparePurchasePrice),
-        downPayment: Math.max(0, inputValues.compareDownPayment),
-        profitRateAnnual: Math.max(0, inputValues.compareProfitRateAnnual) / 100,
-        conventionalRateAnnual: Math.max(0, inputValues.conventionalRateAnnual) / 100,
-        termYears: Math.max(1, Math.round(inputValues.compareTermYears || 1)),
-        propertyTaxMonthly: 0,
-        qualificationRatio: 0.30,
-        monthlyPrepayment: Math.max(0, inputValues.compareMonthlyPrepayment),
-    };
+function pct(x) {
+    return `${(x * 100).toFixed(2)}%`;
 }
 
-function readRentInputs() {
-    const raw = new FormData(rentComparisonForm);
-    const inputValues = Object.fromEntries(
-        Array.from(raw.entries()).map(([key, value]) => [key, Number(value)])
-    );
-
-    return {
-        comparisonMode: raw.get('comparisonMode') || 'cash',
-        purchasePrice: Math.max(0, inputValues.rentPurchasePrice),
-        downPayment: Math.max(0, inputValues.rentDownPayment),
-        profitRateAnnual: Math.max(0, inputValues.rentProfitRateAnnual) / 100,
-        termYears: Math.max(1, Math.round(inputValues.rentTermYears || 1)),
-        propertyTaxMonthly: Math.max(0, inputValues.rentPropertyTaxMonthly),
-        monthlyCondoFees: Math.max(0, inputValues.rentMonthlyCondoFees),
-        monthlyUtilities: Math.max(0, inputValues.rentMonthlyUtilities),
-        monthlyHomeInsurance: Math.max(0, inputValues.rentMonthlyHomeInsurance),
-        monthlyPrepayment: Math.max(0, inputValues.rentMonthlyPrepayment),
-        startingMonthlyRent: Math.max(0, inputValues.startingMonthlyRent),
-        annualRentIncrease: Math.max(0, inputValues.annualRentIncrease) / 100,
-        monthlyRenterInsurance: Math.max(0, inputValues.rentMonthlyRenterInsurance),
-        movingCostOneTime: Math.max(0, inputValues.rentMovingCostOneTime),
-        maintenanceRateAnnual: Math.max(0, inputValues.maintenanceRateAnnual) / 100,
-        homeAppreciationAnnual: Math.max(0, inputValues.homeAppreciationAnnual) / 100,
-        renterReturnAnnual: Math.max(0, inputValues.renterReturnAnnual) / 100,
-        comparisonHorizonYears: Math.max(1, Math.round(inputValues.comparisonHorizonYears || 1)),
-    };
+function ontarioLandTransferTax(price) {
+    const p = Math.max(0, price || 0);
+    let tax = 0;
+    tax += Math.min(p, 55000) * 0.005;
+    if (p > 55000) tax += (Math.min(p, 250000) - 55000) * 0.01;
+    if (p > 250000) tax += (Math.min(p, 400000) - 250000) * 0.015;
+    if (p > 400000) tax += (Math.min(p, 2000000) - 400000) * 0.02;
+    if (p > 2000000) tax += (p - 2000000) * 0.025;
+    return tax;
 }
 
-function buildRentTabInputs(rentInputs) {
-    return {
-        purchasePrice: rentInputs.purchasePrice,
-        downPayment: rentInputs.downPayment,
-        profitRateAnnual: rentInputs.profitRateAnnual,
-        conventionalRateAnnual: 0,
-        termYears: rentInputs.termYears,
-        propertyTaxMonthly: rentInputs.propertyTaxMonthly,
-        qualificationRatio: 0.30,
-        monthlyPrepayment: rentInputs.monthlyPrepayment,
-    };
-}
+function buildModel() {
+    const purchasePrice = num("purchasePrice");
+    const financingAmount = num("financingAmount");
+    const initialProfitRate = num("initialProfitRate") / 100;
+    const termMonths = Math.max(1, Math.floor(num("termMonths")));
+    const propertyGrowthRate = num("propertyGrowthRate") / 100;
+    const sellingCommissionRate = num("sellingCommissionRate") / 100;
+    const hstRate = num("hstRate") / 100;
+    const legalFees = num("legalFees");
+    const dischargeFee = num("dischargeFee");
+    const otherCosts = num("otherCosts");
+    const adminFeeRate = num("adminFeeRate") / 100;
+    const investmentPortfolio = num("investmentPortfolio");
+    const estimatedLegalFeesClosing = num("estimatedLegalFeesClosing");
+    const appraisalFee = num("appraisalFee");
+    const otherClosingCosts = num("otherClosingCosts");
+    const adminFee = financingAmount * adminFeeRate;
+    const landTransferTax = ontarioLandTransferTax(purchasePrice);
+    const totalClosingCosts = adminFee + investmentPortfolio + estimatedLegalFeesClosing + landTransferTax + appraisalFee + otherClosingCosts;
 
-function buildConventionalSchedule(inputs, financingAmount, termMonths) {
-    const purchasePriceBase = Math.max(inputs.purchasePrice, 1);
-    const monthlyRate = inputs.conventionalRateAnnual / 12;
-    const monthlyPayment = clampCurrency(pmt(monthlyRate, termMonths, financingAmount));
-    let beginningBalance = financingAmount;
-    let cumulativeInterestCost = 0;
-    let totalPrincipalPaid = 0;
-    const schedule = [];
+    const initialOwnership = purchasePrice > 0 ? 1 - financingAmount / purchasePrice : 0;
+    const prepayments = parseMonthAmountLines(document.getElementById("prepaymentSchedule").value);
+    const resets = parseResets(document.getElementById("resetSchedule").value, initialProfitRate);
 
-    for (let period = 1; period <= termMonths; period += 1) {
-        if (beginningBalance <= 0) {
-            break;
+    const months = [];
+    let balance = financingAmount;
+    let cumulativeEquity = 0;
+    let resetIdx = -1;
+    let currentRate = initialProfitRate;
+    let currentPayment = pmt(initialProfitRate / 12, termMonths, -financingAmount);
+
+    for (let m = 1; m <= termMonths; m += 1) {
+        if (balance <= 0) break;
+        while (resetIdx + 1 < resets.length && resets[resetIdx + 1].month === m) {
+            resetIdx += 1;
+            currentRate = resets[resetIdx].annualRate;
+            const remainingTerm = termMonths - m + 1;
+            currentPayment = pmt(currentRate / 12, remainingTerm, -balance);
         }
 
-        const interestPayment = clampCurrency(beginningBalance * monthlyRate);
-        const scheduledPrincipal = clampCurrency(monthlyPayment - interestPayment);
-        const remainingAfterScheduled = clampCurrency(beginningBalance - scheduledPrincipal);
-        const appliedPrepayment = clampCurrency(Math.min(inputs.monthlyPrepayment, remainingAfterScheduled));
-        const endingBalance = clampCurrency(beginningBalance - scheduledPrincipal - appliedPrepayment);
-        const principalPaid = clampCurrency(scheduledPrincipal + appliedPrepayment);
+        const opening = balance;
+        const profit = opening * (currentRate / 12);
+        const payment = Math.min(currentPayment, opening + profit);
+        const equityRegular = Math.max(0, payment - profit);
+        const rawPrepay = prepayments.get(m) || 0;
+        const equityPrepay = Math.min(rawPrepay, Math.max(0, opening - equityRegular));
+        const totalEquity = equityRegular + equityPrepay;
+        const closing = Math.max(0, opening - totalEquity);
+        cumulativeEquity += totalEquity;
+        const unitTransfer = totalEquity;
+        const shareTransfer = purchasePrice > 0 ? unitTransfer / purchasePrice : 0;
 
-        cumulativeInterestCost = clampCurrency(cumulativeInterestCost + interestPayment);
-        totalPrincipalPaid = clampCurrency(totalPrincipalPaid + principalPaid);
+        const ownership = purchasePrice > 0 ? Math.min(1, initialOwnership + cumulativeEquity / purchasePrice) : 0;
+        const recognized = ownership;
+        const lttTrigger = false;
 
-        schedule.push({
-            period,
-            beginningBalance,
-            monthlyPayment,
-            interestPayment,
-            principalPaid,
-            endingBalance,
-            equityRatio: Math.min(1, (inputs.downPayment + totalPrincipalPaid) / purchasePriceBase),
-            cumulativeInterestCost,
+        months.push({
+            month: m, opening, payment, prepay: rawPrepay, profit, equityRegular, equityPrepay, totalEquity,
+            closing, ownership, recognized, lttTrigger, unitTransfer, shareTransfer
         });
 
-        beginningBalance = endingBalance;
+        balance = closing;
     }
 
-    return {
-        monthlyPayment,
-        totalInterestCost: cumulativeInterestCost,
-        finalBalance: schedule.length ? schedule[schedule.length - 1].endingBalance : financingAmount,
-        payoffMonth: schedule.length,
-        schedule,
-    };
-}
-
-function buildSchedule(inputs) {
-    const termMonths = inputs.termYears * 12;
-    const purchasePriceBase = Math.max(inputs.purchasePrice, 1);
-    const financingAmount = clampCurrency(inputs.purchasePrice - inputs.downPayment);
-    const monthlyRate = inputs.profitRateAnnual / 12;
-    const monthlyPayment = clampCurrency(pmt(monthlyRate, termMonths, financingAmount));
-    const stressTestedPayment = clampCurrency(financingAmount / termMonths);
-
-    let beginningBalance = financingAmount;
-    let totalSharePurchased = 0;
-    let totalMusharakaCost = 0;
-    let latestQuarterTransfer = 0;
-    const schedule = [];
-
-    for (let period = 1; period <= termMonths; period += 1) {
-        if (beginningBalance <= 0) {
-            break;
-        }
-
-        const paymentTowardFundProfit = clampCurrency(beginningBalance * monthlyRate);
-        const regularShareCost = clampCurrency(monthlyPayment - paymentTowardFundProfit);
-        const remainingAfterRegularPayment = clampCurrency(beginningBalance - regularShareCost);
-        const appliedPrepayment = clampCurrency(Math.min(inputs.monthlyPrepayment, remainingAfterRegularPayment));
-        const endingBalance = clampCurrency(beginningBalance - regularShareCost - appliedPrepayment);
-        const sharePurchasedThisMonth = clampCurrency(regularShareCost + appliedPrepayment);
-
-        totalSharePurchased = clampCurrency(totalSharePurchased + sharePurchasedThisMonth);
-        totalMusharakaCost = clampCurrency(totalMusharakaCost + paymentTowardFundProfit);
-
-        const clientOwnership = Math.min(1, (inputs.downPayment + totalSharePurchased) / purchasePriceBase);
-
-        schedule.push({
-            period,
-            beginningBalance,
-            totalInstallment: monthlyPayment,
-            paymentTowardFundProfit,
-            paymentTowardShareCostPrice: regularShareCost,
-            endingBalance,
-            quarterlySalePrice: null,
-            quarterlySalePriceTransfer: null,
-            quarterlyShareTransfer: null,
-            quarterlyUnitTransfer: null,
-            annualTransfer: null,
-            clientOwnership,
-            prepayment: appliedPrepayment,
-            sharePurchasedThisMonth,
-            cumulativeFinancingCost: totalMusharakaCost,
+    const quarterRows = [];
+    for (let i = 0; i < months.length; i += 3) {
+        const chunk = months.slice(i, i + 3);
+        const end = chunk[chunk.length - 1];
+        const prev = quarterRows[quarterRows.length - 1];
+        const totalEquity = chunk.reduce((s, r) => s + r.totalEquity, 0);
+        const unitTransfer = chunk.reduce((s, r) => s + r.unitTransfer, 0);
+        quarterRows.push({
+            quarter: quarterRows.length + 1,
+            startMonth: chunk[0].month,
+            endMonth: end.month,
+            opening: chunk[0].opening,
+            payment: chunk.reduce((s, r) => s + r.payment, 0),
+            prepay: chunk.reduce((s, r) => s + r.prepay, 0),
+            profit: chunk.reduce((s, r) => s + r.profit, 0),
+            equityRegular: chunk.reduce((s, r) => s + r.equityRegular, 0),
+            equityPrepay: chunk.reduce((s, r) => s + r.equityPrepay, 0),
+            totalEquity,
+            unitTransfer,
+            shareTransfer: purchasePrice > 0 ? unitTransfer / purchasePrice : 0,
+            recognizedTransfer: prev ? end.recognized - prev.recognizedEnd : end.recognized - initialOwnership,
+            closing: end.closing,
+            ownershipEnd: end.ownership,
+            recognizedEnd: end.recognized,
+            ltt: chunk.some((r) => r.lttTrigger) ? "⚠ LTT Trigger" : "OK"
         });
-
-        beginningBalance = endingBalance;
     }
 
-    for (let index = 0; index < schedule.length; index += 3) {
-        const quarterRows = schedule.slice(index, index + 3);
-        if (!quarterRows.length) {
-            continue;
-        }
-
-        const quarterSharePurchased = quarterRows.reduce((sum, row) => sum + row.sharePurchasedThisMonth, 0);
-        const quarterlySalePrice = clampCurrency(monthlyPayment * 3);
-        const quarterlySalePriceTransfer = quarterlySalePrice > 0 ? quarterSharePurchased / quarterlySalePrice : 0;
-        const quarterlyShareTransfer = quarterSharePurchased / purchasePriceBase;
-
-        schedule[index].quarterlySalePrice = quarterlySalePrice;
-        schedule[index].quarterlySalePriceTransfer = quarterlySalePriceTransfer;
-        schedule[index].quarterlyShareTransfer = quarterlyShareTransfer;
-        schedule[index].quarterlyUnitTransfer = Math.round(quarterSharePurchased);
-        schedule[index].annualTransfer = quarterlyShareTransfer * 4;
-        latestQuarterTransfer = quarterlyShareTransfer;
+    const annualRows = [];
+    for (let i = 0; i < months.length; i += 12) {
+        const chunk = months.slice(i, i + 12);
+        const end = chunk[chunk.length - 1];
+        const prev = annualRows[annualRows.length - 1];
+        const totalEquity = chunk.reduce((s, r) => s + r.totalEquity, 0);
+        const unitTransfer = chunk.reduce((s, r) => s + r.unitTransfer, 0);
+        annualRows.push({
+            year: annualRows.length + 1,
+            startMonth: chunk[0].month,
+            endMonth: end.month,
+            opening: chunk[0].opening,
+            payment: chunk.reduce((s, r) => s + r.payment, 0),
+            prepay: chunk.reduce((s, r) => s + r.prepay, 0),
+            profit: chunk.reduce((s, r) => s + r.profit, 0),
+            equityRegular: chunk.reduce((s, r) => s + r.equityRegular, 0),
+            equityPrepay: chunk.reduce((s, r) => s + r.equityPrepay, 0),
+            totalEquity,
+            unitTransfer,
+            shareTransfer: purchasePrice > 0 ? unitTransfer / purchasePrice : 0,
+            recognizedTransfer: prev ? end.recognized - prev.recognizedEnd : end.recognized - initialOwnership,
+            closing: end.closing,
+            ownershipEnd: end.ownership,
+            recognizedEnd: end.recognized,
+            ltt: chunk.some((r) => r.lttTrigger) ? "⚠ LTT Trigger" : "OK"
+        });
     }
 
-    const qualifyingHousingCost = clampCurrency(stressTestedPayment + inputs.propertyTaxMonthly + inputs.monthlyCondoFee);
-    const requiredMonthlyIncome = clampCurrency(qualifyingHousingCost / inputs.qualificationRatio);
-    const requiredAnnualIncome = clampCurrency(requiredMonthlyIncome * 12);
-    const incomeMultiple = 1 / inputs.qualificationRatio;
-    const conventional = buildConventionalSchedule(inputs, financingAmount, termMonths);
-    const comparisonTimeline = buildComparisonTimeline(schedule, conventional.schedule, inputs.termYears);
-
-    return {
-        financingAmount,
-        termMonths,
-        monthlyPayment,
-        stressTestedPayment,
-        qualifyingHousingCost,
-        requiredMonthlyIncome,
-        requiredAnnualIncome,
-        incomeMultiple,
-        propertyTaxMonthly: inputs.propertyTaxMonthly,
-        monthlyCondoFee: inputs.monthlyCondoFee,
-        latestQuarterTransfer,
-        totalSharePurchased,
-        totalMusharakaCost,
-        finalBalance: schedule.length ? schedule[schedule.length - 1].endingBalance : financingAmount,
-        finalOwnership: schedule.length ? schedule[schedule.length - 1].clientOwnership : inputs.downPayment / purchasePriceBase,
-        schedule,
-        conventional,
-        comparisonTimeline,
-    };
-}
-
-function buildComparisonTimeline(musharakaSchedule, conventionalSchedule, termYears) {
-    const timeline = [];
-    const maxYears = termYears;
-
+    const saleRows = [];
+    const maxYears = Math.ceil(termMonths / 12);
+    let prevSaleRecognized = initialOwnership;
     for (let year = 1; year <= maxYears; year += 1) {
-        const monthIndex = Math.min(year * 12, Math.max(musharakaSchedule.length, conventionalSchedule.length)) - 1;
-        const musharakaRow = musharakaSchedule[Math.min(monthIndex, musharakaSchedule.length - 1)] || musharakaSchedule[musharakaSchedule.length - 1];
-        const conventionalRow = conventionalSchedule[Math.min(monthIndex, conventionalSchedule.length - 1)] || conventionalSchedule[conventionalSchedule.length - 1];
+        const saleMonth = Math.min(year * 12, months.length);
+        if (saleMonth < 1) break;
+        const end = months[saleMonth - 1];
+        const yearStartMonth = Math.max(1, (year - 1) * 12 + 1);
+        const annualChunk = months.slice(yearStartMonth - 1, saleMonth);
+        const annualEquityRegular = annualChunk.reduce((s, r) => s + r.equityRegular, 0);
+        const annualEquityPrepay = annualChunk.reduce((s, r) => s + r.equityPrepay, 0);
+        const annualTotalEquity = annualEquityRegular + annualEquityPrepay;
+        const annualShareTransfer = purchasePrice > 0 ? annualTotalEquity / purchasePrice : 0;
+        const annualRecognizedTransfer = end.recognized - prevSaleRecognized;
+        const estimatedSalePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, year);
+        const sellingCommission = estimatedSalePrice * sellingCommissionRate;
+        const hstCommission = sellingCommission * hstRate;
+        const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
+        const netBeforeSplit = estimatedSalePrice - totalSellingCosts;
+        const yourShare = netBeforeSplit * end.recognized;
+        const manzilShare = netBeforeSplit * (1 - end.recognized);
 
-        if (!musharakaRow || !conventionalRow) {
-            continue;
-        }
+        const upto = months.slice(0, saleMonth);
+        const cumulativePayment = upto.reduce((s, r) => s + r.payment, 0);
+        const cumulativePrepay = upto.reduce((s, r) => s + r.prepay, 0);
+        const cumulativeTotalPaid = cumulativePayment + cumulativePrepay;
+        const cumulativeProfitPaid = upto.reduce((s, r) => s + r.profit, 0);
+        const cumulativePrincipalPaid = upto.reduce((s, r) => s + r.totalEquity, 0);
+        const totalCashInvested = purchasePrice * initialOwnership + totalClosingCosts + cumulativeTotalPaid;
+        const netGainWaterfall = yourShare - totalCashInvested;
+        const roiWaterfall = totalCashInvested > 0 ? netGainWaterfall / totalCashInvested : 0;
 
-        timeline.push({
-            year,
-            musharakaBalance: musharakaRow.endingBalance,
-            musharakaOwnership: musharakaRow.clientOwnership,
-            musharakaCumulativeCost: musharakaRow.cumulativeFinancingCost,
-            conventionalBalance: conventionalRow.endingBalance,
-            conventionalEquity: conventionalRow.equityRatio,
-            conventionalCumulativeCost: conventionalRow.cumulativeInterestCost,
-            costGap: conventionalRow.cumulativeInterestCost - musharakaRow.cumulativeFinancingCost,
-            balanceGap: conventionalRow.endingBalance - musharakaRow.endingBalance,
-            equityGap: musharakaRow.clientOwnership - conventionalRow.equityRatio,
+        const remainingBalance = end.closing;
+        const netCashPayoff = netBeforeSplit - remainingBalance;
+        const netGainPayoff = netCashPayoff - totalCashInvested;
+        const roiPayoff = totalCashInvested > 0 ? netGainPayoff / totalCashInvested : 0;
+
+        saleRows.push({
+            year, saleMonth, estimatedSalePrice, sellingCommission, hstCommission, legalFees, dischargeFee, otherCosts,
+            totalSellingCosts, netBeforeSplit, ownershipEnd: end.ownership, recognizedEnd: end.recognized,
+            annualEquityRegular, annualEquityPrepay, annualTotalEquity, annualShareTransfer, annualRecognizedTransfer,
+            adminFee, investmentPortfolio, estimatedLegalFeesClosing, landTransferTax, appraisalFee, otherClosingCosts, totalClosingCosts,
+            manzilOwnershipEnd: 1 - end.recognized, yourShare, manzilShare, cumulativePayment, cumulativePrepay,
+            cumulativeTotalPaid, cumulativeProfitPaid, cumulativePrincipalPaid, totalCashInvested, netGainWaterfall,
+            roiWaterfall, remainingBalance, netCashPayoff, netGainPayoff, roiPayoff
         });
+        prevSaleRecognized = end.recognized;
     }
 
-    return timeline;
+    return { initialOwnership, months, quarterRows, annualRows, saleRows };
 }
 
-function buildRentComparison(inputs, musharakaResult, rentInputs) {
-    const horizonMonths = Math.min(rentInputs.comparisonHorizonYears * 12, musharakaResult.termMonths);
-    const maintenanceMonthlyBase = (inputs.purchasePrice * rentInputs.maintenanceRateAnnual) / 12;
-    const monthlyHomeAppreciation = Math.pow(1 + rentInputs.homeAppreciationAnnual, 1 / 12) - 1;
-    const monthlyRenterReturn = Math.pow(1 + rentInputs.renterReturnAnnual, 1 / 12) - 1;
+function buildRentVsRows(model) {
+    const monthlyRent = num("monthlyRent");
+    const tenantInsuranceMonthly = num("tenantInsuranceMonthly");
+    const utilitiesMonthly = num("utilitiesMonthly");
+    const annualRentGrowthRate = num("annualRentGrowthRate") / 100;
+    const rentDeposit = num("rentDeposit");
+    const movingCosts = num("movingCosts");
+    const propertyTaxMonthly = num("propertyTaxMonthly");
+    const homeInsuranceMonthly = num("homeInsuranceMonthly");
+    const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
+    const maintenanceMonthly = num("maintenanceMonthly");
+    const sensitivityDeltaPct = num("sensitivityDeltaPct") / 100;
 
-    let currentRent = rentInputs.startingMonthlyRent;
-    let currentHomeValue = inputs.purchasePrice;
-    let renterPortfolio = roundCurrency(inputs.downPayment - rentInputs.movingCostOneTime);
-    let ownerCumulativeOutflow = 0;
-    let renterCumulativeOutflow = rentInputs.movingCostOneTime;
-    const timeline = [];
+    const termMonths = Math.max(1, Math.floor(num("termMonths")));
+    const maxYears = Math.ceil(termMonths / 12);
+    const horizons = Array.from({ length: maxYears }, (_, i) => i + 1);
+    const initialOwnershipCash = num("purchasePrice") * model.initialOwnership;
+    const firstSale = model.saleRows[0];
+    const totalClosingCosts = firstSale ? firstSale.totalClosingCosts : 0;
+    const upfrontMusharaka = initialOwnershipCash + totalClosingCosts;
+    const upfrontRent = rentDeposit + movingCosts;
 
-    for (let month = 1; month <= horizonMonths; month += 1) {
-        const scheduleRow = musharakaResult.schedule[Math.min(month - 1, musharakaResult.schedule.length - 1)];
-        if (!scheduleRow) {
-            break;
+    const rows = horizons.map((year) => {
+        const horizonMonths = Math.min(year * 12, model.months.length);
+        const yearsUsed = horizonMonths / 12;
+        const yearStartMonth = Math.max(1, (year - 1) * 12 + 1);
+        const yearStartRow = model.months[yearStartMonth - 1] || model.months[model.months.length - 1];
+        const musharakaMonthlyOutflow = (yearStartRow?.payment || 0) + propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly;
+        const upto = model.months.slice(0, horizonMonths);
+        const end = model.months[horizonMonths - 1];
+        const cumulativeTotalPaid = upto.reduce((s, r) => s + r.payment + r.prepay, 0);
+        const cumulativeProfitPaid = upto.reduce((s, r) => s + r.profit, 0);
+        const cumulativeEquityRegular = upto.reduce((s, r) => s + r.equityRegular, 0);
+        const cumulativeEquityPrepay = upto.reduce((s, r) => s + r.equityPrepay, 0);
+        const totalEquity = cumulativeEquityRegular + cumulativeEquityPrepay;
+        const yearSpecificRent = monthlyRent * Math.pow(1 + annualRentGrowthRate, Math.max(0, year - 1));
+        const rentMonthlyOutflow = yearSpecificRent + tenantInsuranceMonthly + utilitiesMonthly;
+
+        const cumulativeUnitTransfer = upto.reduce((s, r) => s + r.unitTransfer, 0);
+        const annualUnitTransfer = cumulativeUnitTransfer / Math.max(1, year);
+        const annualShareTransfer = num("purchasePrice") > 0 ? annualUnitTransfer / num("purchasePrice") : 0;
+        const cumulativeShareTransfer = num("purchasePrice") > 0 ? cumulativeUnitTransfer / num("purchasePrice") : 0;
+        const recognizedOwnership = end ? end.recognized : model.initialOwnership;
+
+        let totalRentPayments = 0;
+        for (let m = 1; m <= horizonMonths; m += 1) {
+            const annualStep = Math.floor((m - 1) / 12);
+            const grownRent = monthlyRent * Math.pow(1 + annualRentGrowthRate, annualStep);
+            totalRentPayments += grownRent + tenantInsuranceMonthly + utilitiesMonthly;
+        }
+        const totalMushCarryCosts = (propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly) * horizonMonths;
+
+        const totalOutOfPocketRent = upfrontRent + totalRentPayments;
+        const totalOutOfPocketMusharaka = upfrontMusharaka + cumulativeTotalPaid + totalMushCarryCosts;
+
+        const propertyGrowthRateBase = num("propertyGrowthRate") / 100;
+        const salePriceBase = num("purchasePrice") * Math.pow(1 + propertyGrowthRateBase, yearsUsed);
+        const salePriceLow = num("purchasePrice") * Math.pow(1 + Math.max(0, propertyGrowthRateBase - sensitivityDeltaPct), yearsUsed);
+        const salePriceHigh = num("purchasePrice") * Math.pow(1 + propertyGrowthRateBase + sensitivityDeltaPct, yearsUsed);
+
+        const sellingCommissionRate = num("sellingCommissionRate") / 100;
+        const hstRate = num("hstRate") / 100;
+        const legalFees = num("legalFees");
+        const dischargeFee = num("dischargeFee");
+        const otherCosts = num("otherCosts");
+
+        const calcNetBeforeSplit = (price) => {
+            const sellingCommission = price * sellingCommissionRate;
+            const hstCommission = sellingCommission * hstRate;
+            const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
+            return { totalSellingCosts, netBeforeSplit: price - totalSellingCosts };
+        };
+        const baseSale = calcNetBeforeSplit(salePriceBase);
+        const lowSale = calcNetBeforeSplit(salePriceLow);
+        const highSale = calcNetBeforeSplit(salePriceHigh);
+
+        const remainingBalance = end ? end.closing : 0;
+        const yourShareWaterfall = baseSale.netBeforeSplit * recognizedOwnership;
+        const netCashPayoff = baseSale.netBeforeSplit - remainingBalance;
+        const netGainPayoff = netCashPayoff - totalOutOfPocketMusharaka;
+        const effectiveMusharakaCostWaterfallRaw = totalOutOfPocketMusharaka - yourShareWaterfall;
+        const effectiveMusharakaCostWaterfall = -effectiveMusharakaCostWaterfallRaw;
+        const effectiveRentCost = totalOutOfPocketRent;
+        const unusedUpfrontCash = num("purchasePrice") * model.initialOwnership;
+        const rentCostForComparison = effectiveRentCost - unusedUpfrontCash;
+        const netPositionMusharaka = yourShareWaterfall - totalOutOfPocketMusharaka;
+        const netPositionRent = -rentCostForComparison;
+        const netPosition = netPositionMusharaka;
+        const roiMusharaka = totalOutOfPocketMusharaka > 0 ? netPositionMusharaka / totalOutOfPocketMusharaka : 0;
+        const roiRent = totalOutOfPocketRent > 0 ? netPositionRent / totalOutOfPocketRent : 0;
+        const betterOption = effectiveMusharakaCostWaterfallRaw < rentCostForComparison ? "Musharaka" : "Rent";
+        const betterBy = Math.abs(effectiveMusharakaCostWaterfallRaw - rentCostForComparison);
+
+        const rentGrowthLow = Math.max(0, annualRentGrowthRate - sensitivityDeltaPct);
+        const rentGrowthHigh = annualRentGrowthRate + sensitivityDeltaPct;
+        let rentLowTotal = 0;
+        let rentBaseTotal = 0;
+        let rentHighTotal = 0;
+        for (let m = 1; m <= horizonMonths; m += 1) {
+            const annualStep = Math.floor((m - 1) / 12);
+            rentLowTotal += monthlyRent * Math.pow(1 + rentGrowthLow, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
+            rentBaseTotal += monthlyRent * Math.pow(1 + annualRentGrowthRate, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
+            rentHighTotal += monthlyRent * Math.pow(1 + rentGrowthHigh, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
         }
 
-        currentHomeValue = clampCurrency(currentHomeValue * (1 + monthlyHomeAppreciation));
+        return {
+            horizon: `${year}Y`,
+            rentMonthlyOutflow,
+            musharakaMonthlyOutflow,
+            upfrontRent,
+            upfrontMusharaka,
+            cumulativeEquityRegular,
+            cumulativeEquityPrepay,
+            totalEquity,
+            annualUnitTransfer,
+            annualShareTransfer,
+            cumulativeShareTransfer,
+            recognizedOwnership,
+            totalOutOfPocketRent,
+            totalOutOfPocketMusharaka,
+            effectiveRentCost,
+            effectiveMusharakaCostWaterfall,
+            netPosition,
+            roiMusharaka,
+            roiRent,
+            betterOption,
+            betterBy,
+            estimatedSalePrice: salePriceBase,
+            totalSellingCosts: baseSale.totalSellingCosts,
+            netSaleBeforeSplit: baseSale.netBeforeSplit,
+            remainingBalance,
+            netGainPayoff,
+            yourShareWaterfall,
+            cumulativeTotalPaid,
+            cumulativeProfitPaid,
+            totalCashInvested: totalOutOfPocketMusharaka,
+            netSaleLow: lowSale.netBeforeSplit,
+            netSaleBase: baseSale.netBeforeSplit,
+            netSaleHigh: highSale.netBeforeSplit,
+            rentOutLow: upfrontRent + rentLowTotal,
+            rentOutBase: upfrontRent + rentBaseTotal,
+            rentOutHigh: upfrontRent + rentHighTotal
+        };
+    });
 
-        const ownerMonthlyOutflow = clampCurrency(
-            scheduleRow.totalInstallment + scheduleRow.prepayment + inputs.propertyTaxMonthly + rentInputs.monthlyCondoFees + rentInputs.monthlyUtilities + rentInputs.monthlyHomeInsurance + maintenanceMonthlyBase
-        );
-        const renterMonthlyOutflow = clampCurrency(currentRent + rentInputs.monthlyRenterInsurance);
-        const monthlyGap = roundCurrency(ownerMonthlyOutflow - renterMonthlyOutflow);
+    return rows;
+}
 
-        ownerCumulativeOutflow = clampCurrency(ownerCumulativeOutflow + ownerMonthlyOutflow);
-        renterCumulativeOutflow = clampCurrency(renterCumulativeOutflow + renterMonthlyOutflow);
-        renterPortfolio = roundCurrency(renterPortfolio * (1 + monthlyRenterReturn) + monthlyGap);
+function buildConventionalMonths() {
+    const purchasePrice = num("purchasePrice");
+    const termMonths = Math.max(1, Math.floor(num("termMonths")));
+    const convMortgageAmount = num("convMortgageAmount");
+    const convInitialRate = num("convInitialRate") / 100;
+    const convAmortMonths = Math.max(1, Math.floor(num("convAmortMonths")));
+    const convResets = parseResets(document.getElementById("convResetSchedule").value, convInitialRate);
+    const convPrepayments = parseMonthAmountLines(document.getElementById("convPrepaymentSchedule").value);
 
-        if (month % 12 === 0) {
-            const ownerStakeValue = clampCurrency(scheduleRow.clientOwnership * currentHomeValue);
-            timeline.push({
-                year: month / 12,
-                ownerMonthlyOutflow,
-                ownerCumulativeOutflow,
-                renterMonthlyOutflow,
-                homeValue: currentHomeValue,
-                ownerStakeValue,
-                yearEndRent: currentRent,
-                renterCumulativeOutflow,
-                renterPortfolio,
-                outflowGap: clampCurrency(ownerCumulativeOutflow - renterCumulativeOutflow),
-                netWorthGap: roundCurrency(ownerStakeValue - renterPortfolio),
-            });
+    const months = [];
+    let balance = convMortgageAmount;
+    let resetIdx = -1;
+    let currentRate = convInitialRate;
+    let currentPayment = pmt(convInitialRate / 12, convAmortMonths, -convMortgageAmount);
 
-            currentRent = clampCurrency(currentRent * (1 + rentInputs.annualRentIncrease));
+    for (let m = 1; m <= termMonths; m += 1) {
+        if (balance <= 0) break;
+        while (resetIdx + 1 < convResets.length && convResets[resetIdx + 1].month === m) {
+            resetIdx += 1;
+            currentRate = convResets[resetIdx].annualRate;
+            const remainingAmort = Math.max(1, convAmortMonths - m + 1);
+            currentPayment = pmt(currentRate / 12, remainingAmort, -balance);
         }
+        const opening = balance;
+        const interest = opening * (currentRate / 12);
+        const payment = Math.min(currentPayment, opening + interest);
+        const principalRegular = Math.max(0, payment - interest);
+        const rawPrepay = convPrepayments.get(m) || 0;
+        const principalPrepay = Math.min(rawPrepay, Math.max(0, opening - principalRegular));
+        const principalTotal = principalRegular + principalPrepay;
+        const closing = Math.max(0, opening - principalTotal);
+        const equityShare = purchasePrice > 0 ? Math.min(1, 1 - closing / purchasePrice) : 0;
+        months.push({
+            month: m, opening, payment, interest, principalRegular, principalPrepay, principalTotal, closing, equityShare
+        });
+        balance = closing;
     }
-
-    const horizonPoint = timeline[timeline.length - 1] || null;
-    const tenYearPoint = timeline.find((row) => row.year === 10) || null;
-    const currentOwnerMonthlyOutflow = musharakaResult.schedule.length
-        ? clampCurrency(musharakaResult.schedule[0].totalInstallment + musharakaResult.schedule[0].prepayment + inputs.propertyTaxMonthly + rentInputs.monthlyCondoFees + rentInputs.monthlyUtilities + rentInputs.monthlyHomeInsurance + maintenanceMonthlyBase)
-        : 0;
-    const currentRenterMonthlyOutflow = clampCurrency(rentInputs.startingMonthlyRent + rentInputs.monthlyRenterInsurance);
-
-    return {
-        comparisonMode: rentInputs.comparisonMode,
-        currentOwnerMonthlyOutflow,
-        currentRenterMonthlyOutflow,
-        currentRent: rentInputs.startingMonthlyRent,
-        currentMonthlyGap: roundCurrency(currentOwnerMonthlyOutflow - currentRenterMonthlyOutflow),
-        horizonPoint,
-        tenYearPoint,
-        timeline,
-    };
+    return months;
 }
 
-function buildExplanationTopics(context) {
-    const firstScheduleRow = context.result.schedule[0] || null;
-    const firstQuarterRow = context.result.schedule.find((row) => row.quarterlyUnitTransfer !== null) || null;
-    const conventionalFiveYearPoint = context.conventionalResult.comparisonTimeline[Math.min(4, context.conventionalResult.comparisonTimeline.length - 1)] || null;
-    const rentVerdictPoint = context.rentComparison.tenYearPoint || context.rentComparison.horizonPoint || null;
-    const isRentNetWorthMode = context.rentInputs.comparisonMode === 'networth';
+function buildConvVsRows(model) {
+    const convMonths = buildConventionalMonths();
+    const purchasePrice = num("purchasePrice");
+    const propertyGrowthRate = num("propertyGrowthRate") / 100;
+    const sellingCommissionRate = num("sellingCommissionRate") / 100;
+    const hstRate = num("hstRate") / 100;
+    const legalFees = num("legalFees");
+    const dischargeFee = num("dischargeFee");
+    const otherCosts = num("otherCosts");
+    const propertyTaxMonthly = num("propertyTaxMonthly");
+    const homeInsuranceMonthly = num("homeInsuranceMonthly");
+    const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
+    const maintenanceMonthly = num("maintenanceMonthly");
+    const sharedMonthlyCarry = propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly;
+    const horizons = [1, 3, 5, 10];
 
-    return [
-        {
-            id: 'monthly-payment',
-            tab: 'calculator',
-            title: 'How is the monthly payment calculated?',
-            meta: 'Uses the financed amount, monthly profit rate, and total term.',
-            keywords: 'monthly payment installment pmt financing amount profit rate term',
-            formula: 'Monthly payment = PMT(profit rate / 12, term months, purchase price - down payment)',
-            current: `Financing amount is ${currencyFormatter.format(context.result.financingAmount)}. Monthly profit rate is ${formatPercentValue(context.inputs.profitRateAnnual / 12, 4)} over ${numberFormatter.format(context.result.termMonths)} months, which gives ${currencyFormatter.format(context.result.monthlyPayment)}.`,
-            why: 'It goes up when the financed amount or profit rate increases. It usually goes down when the down payment is larger or the term is longer.',
-        },
-        {
-            id: 'stress-test',
-            tab: 'calculator',
-            title: 'How is the stress-tested payment calculated?',
-            meta: 'This follows the screenshot logic instead of a second PMT formula.',
-            keywords: 'stress test payment stress tested affordability qualification screenshot logic',
-            formula: 'Stress-tested payment = financing amount / total months',
-            current: `${currencyFormatter.format(context.result.financingAmount)} divided by ${numberFormatter.format(context.result.termMonths)} months = ${currencyFormatter.format(context.result.stressTestedPayment)}.`,
-            why: 'It changes only when the financing amount or term changes. In this model it does not use a separate stress-test interest rate.',
-        },
-        {
-            id: 'required-income',
-            tab: 'calculator',
-            title: 'How is the required income calculated?',
-            meta: 'The qualifying monthly cost is divided by the qualification ratio.',
-            keywords: 'required income annual income qualification ratio affordability property tax condo fee',
-            formula: 'Required monthly income = (stress-tested payment + monthly property tax + monthly condo fee) / qualification ratio',
-            current: `${currencyFormatter.format(context.result.stressTestedPayment)} + ${currencyFormatter.format(context.result.propertyTaxMonthly)} + ${currencyFormatter.format(context.result.monthlyCondoFee)} = ${currencyFormatter.format(context.result.qualifyingHousingCost)}. Dividing that by ${formatPercentValue(context.inputs.qualificationRatio)} gives ${currencyFormatter.format(context.result.requiredMonthlyIncome)} per month, or ${currencyFormatter.format(context.result.requiredAnnualIncome)} per year.`,
-            why: 'A tighter qualification ratio raises the income requirement. Higher property tax or condo fees also raise it, even though they do not change the Musharaka financing schedule.',
-        },
-        {
-            id: 'share-purchase',
-            tab: 'calculator',
-            title: 'How is the share purchase portion calculated?',
-            meta: 'Each month the installment is split between profit and buying more ownership.',
-            keywords: 'share purchase fund profit ownership prepayment principal',
-            formula: 'Share purchase = total installment - payment towards fund profit; prepayment is added on top',
-            current: firstScheduleRow
-                ? `In month 1, total installment is ${currencyFormatter.format(firstScheduleRow.totalInstallment)} and payment towards fund profit is ${currencyFormatter.format(firstScheduleRow.paymentTowardFundProfit)}, so the scheduled share purchase is ${currencyFormatter.format(firstScheduleRow.paymentTowardShareCostPrice)}. Prepayment for that month is ${currencyFormatter.format(firstScheduleRow.prepayment)}.`
-                : 'Add valid inputs to see the first monthly split.',
-            why: 'As the fund balance shrinks, the profit portion usually falls and the share-purchase portion usually rises. Any prepayment reduces the balance faster.',
-        },
-        {
-            id: 'quarterly-transfer',
-            tab: 'calculator',
-            title: 'How are the quarterly transfer values calculated?',
-            meta: 'Quarterly transfer appears on period 1, 4, 7, and so on.',
-            keywords: 'quarterly transfer annual transfer unit transfer sale price schedule',
-            formula: 'Quarterly unit transfer = sum of 3 months of share purchases; quarterly share transfer % = quarterly unit transfer / purchase price; annual % transfer = quarterly share transfer % x 4',
-            current: firstQuarterRow
-                ? `For the first quarter block, the model sums three months of share purchases to get ${numberFormatter.format(firstQuarterRow.quarterlyUnitTransfer)}. That is ${percentFormatter.format(firstQuarterRow.quarterlyShareTransfer)} of the ${currencyFormatter.format(context.inputs.purchasePrice)} purchase price. Annual % transfer is shown as ${percentFormatter.format(firstQuarterRow.annualTransfer)}.`
-                : 'Add valid inputs to see the first quarterly block.',
-            why: 'These values move when monthly share purchases change. Higher rates reduce early share transfer, while higher prepayments increase it.',
-        },
-        {
-            id: 'comparison-payment-gap',
-            tab: 'conventional-comparison',
-            title: 'How is the monthly payment gap calculated?',
-            meta: 'Compares the Musharaka installment with the conventional mortgage payment.',
-            keywords: 'payment gap conventional mortgage comparison monthly payment gap',
-            formula: 'Payment gap = conventional monthly payment - Musharaka monthly payment',
-            current: `${currencyFormatter.format(context.conventionalResult.conventional.monthlyPayment)} minus ${currencyFormatter.format(context.conventionalResult.monthlyPayment)} = ${formatSignedCurrency(context.conventionalResult.conventional.monthlyPayment - context.conventionalResult.monthlyPayment)}.`,
-            why: 'The gap changes when either rate changes, or when purchase price, down payment, term, or prepayment assumptions change.',
-        },
-        {
-            id: 'comparison-five-year-balance',
-            tab: 'conventional-comparison',
-            title: 'How is the 5-year balance gap calculated?',
-            meta: 'Uses the balances after 60 months in both schedules.',
-            keywords: '5 year balance gap remaining balance after 60 months',
-            formula: '5-year balance gap = conventional balance after 60 months - Musharaka balance after 60 months',
-            current: conventionalFiveYearPoint
-                ? `${currencyFormatter.format(conventionalFiveYearPoint.conventionalBalance)} minus ${currencyFormatter.format(conventionalFiveYearPoint.musharakaBalance)} = ${formatSignedCurrency(conventionalFiveYearPoint.balanceGap)} after year 5.`
-                : 'Set a term of at least 5 years to see the year-5 comparison.',
-            why: 'This gap reflects how quickly each structure reduces the outstanding balance under the same purchase price, term, and prepayment assumptions.',
-        },
-        {
-            id: 'comparison-total-cost',
-            tab: 'conventional-comparison',
-            title: 'How are total financing costs compared?',
-            meta: 'Musharaka tracks cumulative fund profit while conventional tracks cumulative interest.',
-            keywords: 'total cost cumulative cost interest profit financing cost',
-            formula: 'Cost gap over time = conventional cumulative interest - Musharaka cumulative fund profit',
-            current: `At full term, Musharaka cumulative fund profit is ${currencyFormatter.format(context.conventionalResult.totalMusharakaCost)} and conventional cumulative interest is ${currencyFormatter.format(context.conventionalResult.conventional.totalInterestCost)}.`,
-            why: 'These totals respond to rate changes, the pace of principal reduction, and any prepayments that shorten the life of the financing.',
-        },
-        {
-            id: 'rent-owner-outflow',
-            tab: 'rent-comparison',
-            title: 'How is the owner monthly outflow calculated?',
-            meta: 'Adds all current housing cash costs on the ownership side.',
-            keywords: 'owner monthly outflow rent comparison tax condo utilities insurance maintenance',
-            formula: 'Owner outflow = installment + prepayment + property tax + condo fees + utilities + home insurance + monthly maintenance estimate',
-            current: `${currencyFormatter.format(context.rentComparison.currentOwnerMonthlyOutflow)} is built from the first Musharaka installment plus ${currencyFormatter.format(context.rentInputs.propertyTaxMonthly)} property tax, ${currencyFormatter.format(context.rentInputs.monthlyCondoFees)} condo fees, ${currencyFormatter.format(context.rentInputs.monthlyUtilities)} utilities, ${currencyFormatter.format(context.rentInputs.monthlyHomeInsurance)} home insurance, and maintenance based on ${formatPercentValue(context.rentInputs.maintenanceRateAnnual)} of home value per year.`,
-            why: 'This figure rises when ownership costs or maintenance assumptions rise. It also changes with the financing payment and any prepayment you add.',
-        },
-        {
-            id: 'rent-gap',
-            tab: 'rent-comparison',
-            title: 'How is the monthly rent gap calculated?',
-            meta: 'Compares current owner outflow against current renter outflow.',
-            keywords: 'rent gap monthly gap renter outflow owner outflow',
-            formula: 'Monthly gap = owner monthly outflow - renter monthly outflow',
-            current: `${currencyFormatter.format(context.rentComparison.currentOwnerMonthlyOutflow)} minus ${currencyFormatter.format(context.rentComparison.currentRenterMonthlyOutflow)} = ${formatSignedCurrency(context.rentComparison.currentMonthlyGap)}.`,
-            why: 'A positive value means owning costs more today. A negative value means renting costs more today.',
-        },
-        {
-            id: 'rent-verdict',
-            tab: 'rent-comparison',
-            title: 'How is the 10-year verdict decided?',
-            meta: 'The verdict changes based on whether the tab is in cash mode or net worth mode.',
-            keywords: '10 year verdict cash outflow net worth rent comparison',
-            formula: isRentNetWorthMode
-                ? 'Net worth mode verdict = owner stake value - renter portfolio at the selected horizon'
-                : 'Cash mode verdict = owner cumulative outflow - renter cumulative outflow at the selected horizon',
-            current: rentVerdictPoint
-                ? (isRentNetWorthMode
-                    ? `At year ${numberFormatter.format(rentVerdictPoint.year)}, owner stake value is ${currencyFormatter.format(rentVerdictPoint.ownerStakeValue)} and renter portfolio is ${currencyFormatter.format(rentVerdictPoint.renterPortfolio)}, so the net worth gap is ${formatSignedCurrency(rentVerdictPoint.netWorthGap)}.`
-                    : `At year ${numberFormatter.format(rentVerdictPoint.year)}, owner cumulative outflow is ${currencyFormatter.format(rentVerdictPoint.ownerCumulativeOutflow)} and renter cumulative outflow is ${currencyFormatter.format(rentVerdictPoint.renterCumulativeOutflow)}, so the cash outflow gap is ${formatSignedCurrency(rentVerdictPoint.outflowGap)}.`)
-                : 'Increase the comparison horizon to see the verdict calculation.',
-            why: isRentNetWorthMode
-                ? 'Net worth mode is sensitive to home appreciation, renter return assumptions, ownership growth, and cash flow differences invested over time.'
-                : 'Cash mode ignores asset growth and only compares how much cash each side has spent by the horizon.',
-        },
+    const convMortgageAmount = num("convMortgageAmount");
+    const convDownpayment = Math.max(0, purchasePrice - convMortgageAmount);
+    const convLandTransferTax = ontarioLandTransferTax(purchasePrice);
+    const convFees = num("convLenderFees") + num("convLegalFeesClosing") + num("convAppraisalFees") + num("convInsurancePremium") + num("convOtherClosingCosts");
+    const upfrontConventional = convDownpayment + convLandTransferTax + convFees;
+
+    const mushInitialEquity = purchasePrice * model.initialOwnership;
+    const mushClosingCosts = model.saleRows[0] ? model.saleRows[0].totalClosingCosts : 0;
+    const upfrontMusharaka = mushInitialEquity + mushClosingCosts;
+
+    return horizons.map((year) => {
+        const horizonMonths = year * 12;
+        const mushMonthsUsed = Math.min(horizonMonths, model.months.length);
+        const convMonthsUsed = Math.min(horizonMonths, convMonths.length);
+        const mushUpto = model.months.slice(0, mushMonthsUsed);
+        const convUpto = convMonths.slice(0, convMonthsUsed);
+        const mushEnd = model.months[mushMonthsUsed - 1];
+        const convEnd = convMonths[convMonthsUsed - 1];
+        const yearsUsed = mushMonthsUsed / 12;
+
+        const mushPrincipal = mushUpto.reduce((s, r) => s + r.totalEquity, 0);
+        const convPrincipal = convUpto.reduce((s, r) => s + r.principalTotal, 0);
+        const annualUnitTransferMush = mushPrincipal / Math.max(1, year);
+        const annualUnitTransferConv = convPrincipal / Math.max(1, year);
+        const annualShareTransferMush = purchasePrice > 0 ? annualUnitTransferMush / purchasePrice : 0;
+        const annualShareTransferConv = purchasePrice > 0 ? annualUnitTransferConv / purchasePrice : 0;
+        const mushPayments = mushUpto.reduce((s, r) => s + r.payment + r.prepay, 0);
+        const convPayments = convUpto.reduce((s, r) => s + r.payment + r.principalPrepay, 0);
+        const mushCarry = sharedMonthlyCarry * mushMonthsUsed;
+        const convCarry = sharedMonthlyCarry * convMonthsUsed;
+        const totalOutOfPocketMush = upfrontMusharaka + mushPayments + mushCarry;
+        const totalOutOfPocketConv = upfrontConventional + convPayments + convCarry;
+
+        const salePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, yearsUsed);
+        const sellingCommission = salePrice * sellingCommissionRate;
+        const hstCommission = sellingCommission * hstRate;
+        const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
+        const netSaleBeforeSplit = salePrice - totalSellingCosts;
+
+        const mushRecognized = mushEnd ? mushEnd.recognized : model.initialOwnership;
+        const mushYourShareWaterfall = netSaleBeforeSplit * mushRecognized;
+        const convNetCashAtSale = netSaleBeforeSplit - (convEnd ? convEnd.closing : 0);
+
+        const effectiveCostMush = totalOutOfPocketMush - mushYourShareWaterfall;
+        const effectiveCostConv = totalOutOfPocketConv - convNetCashAtSale;
+        const betterOption = effectiveCostMush < effectiveCostConv ? "Musharaka" : "Conventional";
+        const betterBy = Math.abs(effectiveCostMush - effectiveCostConv);
+
+        return {
+            horizon: `${year}Y`,
+            betterOption,
+            betterBy,
+            monthlyOutflowMush: (model.months[0]?.payment || 0) + sharedMonthlyCarry,
+            monthlyOutflowConv: (convMonths[0]?.payment || 0) + sharedMonthlyCarry,
+            upfrontMusharaka,
+            upfrontConventional,
+            annualPrincipalMush: mushPrincipal / Math.max(1, yearsUsed),
+            annualPrincipalConv: convPrincipal / Math.max(1, yearsUsed),
+            annualShareTransferMush,
+            annualShareTransferConv,
+            totalPrincipalMush: mushPrincipal,
+            totalPrincipalConv: convPrincipal,
+            recognizedOwnershipMush: mushRecognized,
+            equityShareConv: convEnd ? convEnd.equityShare : 0,
+            totalOutOfPocketMush,
+            totalOutOfPocketConv,
+            estimatedSalePrice: salePrice,
+            totalSellingCosts,
+            netSaleBeforeSplit,
+            remainingBalanceMush: mushEnd ? mushEnd.closing : 0,
+            remainingBalanceConv: convEnd ? convEnd.closing : 0,
+            netCashAtSaleConv: convNetCashAtSale,
+            effectiveCostMush,
+            effectiveCostConv
+        };
+    });
+}
+
+function renderTable(id, columns, rows) {
+    const table = document.getElementById(id);
+    const thead = `<thead><tr>${columns.map((c) => `<th>${c.label}</th>`).join("")}</tr></thead>`;
+    const body = rows.map((row) => `<tr>${columns.map((c) => {
+        const value = c.format ? c.format(row[c.key], row) : row[c.key];
+        const cls = c.className ? c.className(row) : "";
+        return `<td class="${cls}">${value ?? ""}</td>`;
+    }).join("")}</tr>`).join("");
+    table.innerHTML = `${thead}<tbody>${body}</tbody>`;
+}
+
+function render() {
+    const model = buildModel();
+    const showDetailQuarterly = document.getElementById("showDetailQuarterly")?.checked;
+    const showDetailAnnual = document.getElementById("showDetailAnnual")?.checked;
+    const showDetailSale = document.getElementById("showDetailSale")?.checked;
+    const showDetailRentVs = document.getElementById("showDetailRentVs")?.checked;
+    const showDetailConvVs = document.getElementById("showDetailConvVs")?.checked;
+    const last = model.months[model.months.length - 1];
+    const kpi = document.getElementById("kpiPanel");
+    const firstSale = model.saleRows[0];
+    kpi.innerHTML = `
+    <h2>Key Results</h2>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="label">Initial Ownership</div><div class="value">${pct(model.initialOwnership)}</div></div>
+      <div class="kpi"><div class="label">Total Admin Fee</div><div class="value">${firstSale ? money(firstSale.adminFee) : "-"}</div></div>
+      <div class="kpi"><div class="label">Ontario LTT</div><div class="value">${firstSale ? money(firstSale.landTransferTax) : "-"}</div></div>
+      <div class="kpi"><div class="label">Total Closing Costs</div><div class="value">${firstSale ? money(firstSale.totalClosingCosts) : "-"}</div></div>
+    </div>
+  `;
+
+    renderTable("monthlyTable", [
+        { key: "month", label: "Month" },
+        { key: "opening", label: "Opening Balance", format: money },
+        { key: "payment", label: "Payment", format: money },
+        { key: "prepay", label: "Prepayment", format: money },
+        { key: "profit", label: "Profit", format: money },
+        { key: "equityRegular", label: "Equity (Regular)", format: money },
+        { key: "equityPrepay", label: "Equity (Prepay)", format: money },
+        { key: "totalEquity", label: "Total Equity", format: money },
+        { key: "closing", label: "Closing Balance", format: money },
+        { key: "ownership", label: "Ownership %", format: pct },
+        { key: "recognized", label: "Recognized Ownership %", format: pct },
+        { key: "lttTrigger", label: "LTT Warning", format: (v) => (v ? "⚠ LTT Trigger" : "OK"), className: (r) => (r.lttTrigger ? "warn" : "") }
+    ], model.months.map((r) => ({
+        ...r,
+        opening: round2(r.opening), payment: round2(r.payment), prepay: round2(r.prepay), profit: round2(r.profit),
+        equityRegular: round2(r.equityRegular), equityPrepay: round2(r.equityPrepay), totalEquity: round2(r.totalEquity), closing: round2(r.closing)
+    })));
+
+    const quarterlyColumnsDetailed = [
+        { key: "quarter", label: "Quarter" },
+        { key: "startMonth", label: "Start Month" },
+        { key: "endMonth", label: "End Month" },
+        { key: "opening", label: "Opening Balance", format: money },
+        { key: "payment", label: "Payment", format: money },
+        { key: "prepay", label: "Prepayment", format: money },
+        { key: "profit", label: "Profit", format: money },
+        { key: "equityRegular", label: "Equity (Regular)", format: money },
+        { key: "equityPrepay", label: "Equity (Prepay)", format: money },
+        { key: "totalEquity", label: "Total Equity", format: money },
+        { key: "unitTransfer", label: "Quarterly Unit Transfer", format: money },
+        { key: "shareTransfer", label: "Share Transfer %", format: pct },
+        { key: "recognizedTransfer", label: "Recognized Share Transfer %", format: pct },
+        { key: "closing", label: "Closing Balance", format: money },
+        { key: "ownershipEnd", label: "Ownership % (End)", format: pct },
+        { key: "recognizedEnd", label: "Recognized Ownership % (End)", format: pct },
+        { key: "ltt", label: "LTT Trigger?", className: (r) => (r.ltt.includes("⚠") ? "warn" : "") }
     ];
+    const quarterlyColumnsCompact = [
+        { key: "quarter", label: "Quarter" },
+        { key: "startMonth", label: "Start" },
+        { key: "endMonth", label: "End" },
+        { key: "payment", label: "Payment", format: money },
+        { key: "profit", label: "Profit", format: money },
+        { key: "totalEquity", label: "Total Equity", format: money },
+        { key: "closing", label: "Closing Balance", format: money },
+        { key: "ownershipEnd", label: "Ownership %", format: pct },
+        { key: "recognizedEnd", label: "Recognized %", format: pct },
+        { key: "ltt", label: "LTT", className: (r) => (r.ltt.includes("⚠") ? "warn" : "") }
+    ];
+    renderTable("quarterlyTable", showDetailQuarterly ? quarterlyColumnsDetailed : quarterlyColumnsCompact, model.quarterRows.map((r) => ({ ...r, opening: round2(r.opening), payment: round2(r.payment), prepay: round2(r.prepay), profit: round2(r.profit), equityRegular: round2(r.equityRegular), equityPrepay: round2(r.equityPrepay), totalEquity: round2(r.totalEquity), unitTransfer: round2(r.unitTransfer), closing: round2(r.closing) })));
+
+    const annualColumnsDetailed = [
+        { key: "year", label: "Year" },
+        { key: "startMonth", label: "Start Month" },
+        { key: "endMonth", label: "End Month" },
+        { key: "opening", label: "Opening Balance", format: money },
+        { key: "payment", label: "Annual Payment", format: money },
+        { key: "prepay", label: "Annual Prepayment", format: money },
+        { key: "profit", label: "Annual Profit", format: money },
+        { key: "equityRegular", label: "Annual Equity (Regular)", format: money },
+        { key: "equityPrepay", label: "Annual Equity (Prepay)", format: money },
+        { key: "totalEquity", label: "Total Equity", format: money },
+        { key: "unitTransfer", label: "Annual Unit Transfer", format: money },
+        { key: "shareTransfer", label: "Annual Share Transfer %", format: pct },
+        { key: "recognizedTransfer", label: "Annual Recognized Transfer %", format: pct },
+        { key: "closing", label: "Closing Balance", format: money },
+        { key: "ownershipEnd", label: "Ownership % (End)", format: pct },
+        { key: "recognizedEnd", label: "Recognized Ownership % (End)", format: pct },
+        { key: "ltt", label: "LTT Trigger?", className: (r) => (r.ltt.includes("⚠") ? "warn" : "") }
+    ];
+    const annualColumnsCompact = [
+        { key: "year", label: "Year" },
+        { key: "startMonth", label: "Start" },
+        { key: "endMonth", label: "End" },
+        { key: "payment", label: "Annual Payment", format: money },
+        { key: "profit", label: "Annual Profit", format: money },
+        { key: "totalEquity", label: "Total Equity", format: money },
+        { key: "closing", label: "Closing Balance", format: money },
+        { key: "ownershipEnd", label: "Ownership %", format: pct },
+        { key: "recognizedEnd", label: "Recognized %", format: pct },
+        { key: "ltt", label: "LTT", className: (r) => (r.ltt.includes("⚠") ? "warn" : "") }
+    ];
+    renderTable("annualTable", showDetailAnnual ? annualColumnsDetailed : annualColumnsCompact, model.annualRows.map((r) => ({ ...r, opening: round2(r.opening), payment: round2(r.payment), prepay: round2(r.prepay), profit: round2(r.profit), equityRegular: round2(r.equityRegular), equityPrepay: round2(r.equityPrepay), totalEquity: round2(r.totalEquity), unitTransfer: round2(r.unitTransfer), closing: round2(r.closing) })));
+
+    const saleColumnsDetailed = [
+        { key: "year", label: "Year" },
+        { key: "saleMonth", label: "Sale Month" },
+        { key: "estimatedSalePrice", label: "Estimated Sale Price", format: money },
+        { key: "totalSellingCosts", label: "Total Selling Costs", format: money },
+        { key: "netBeforeSplit", label: "Net Sale Before Split", format: money },
+        { key: "annualShareTransfer", label: "Annual Share Transfer %", format: pct },
+        { key: "ownershipEnd", label: "Ownership %", format: pct },
+        { key: "annualEquityRegular", label: "Annual Equity (Regular)", format: money },
+        { key: "annualEquityPrepay", label: "Annual Equity (Prepay)", format: money },
+        { key: "annualTotalEquity", label: "Total Equity", format: money },
+        { key: "yourShare", label: "Your Share (Waterfall)", format: money },
+        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
+        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
+        { key: "totalCashInvested", label: "Total Cash Invested", format: money },
+        { key: "netGainWaterfall", label: "Net Gain/Loss (Waterfall)", format: money },
+        { key: "recognizedEnd", label: "Recognized Ownership %", format: pct },
+        { key: "annualRecognizedTransfer", label: "Annual Recognized Transfer %", format: pct },
+        { key: "roiWaterfall", label: "ROI (Waterfall)", format: pct },
+        { key: "remainingBalance", label: "Remaining Balance (Payoff)", format: money },
+        { key: "netCashPayoff", label: "Net Cash at Sale (Payoff)", format: money },
+        { key: "netGainPayoff", label: "Net Gain/Loss (Payoff)", format: money },
+        { key: "roiPayoff", label: "ROI (Payoff)", format: pct }
+    ];
+    const saleColumnsCompact = [
+        { key: "year", label: "Year" },
+        { key: "saleMonth", label: "Sale Month" },
+        { key: "annualTotalEquity", label: "Total Equity", format: money },
+        { key: "annualShareTransfer", label: "Share Transfer %", format: pct },
+        { key: "estimatedSalePrice", label: "Est. Sale Price", format: money },
+        { key: "totalSellingCosts", label: "Selling Costs", format: money },
+        { key: "ownershipEnd", label: "Ownership %", format: pct },
+        { key: "yourShare", label: "Your Share", format: money },
+        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
+        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
+        { key: "totalCashInvested", label: "Cash Invested", format: money },
+        { key: "netGainWaterfall", label: "Net Gain (Waterfall)", format: money },
+        { key: "roiWaterfall", label: "ROI (Waterfall)", format: pct }
+    ];
+    renderTable("saleTable", showDetailSale ? saleColumnsDetailed : saleColumnsCompact, model.saleRows.map((r) => ({
+        ...r,
+        annualEquityRegular: round2(r.annualEquityRegular), annualEquityPrepay: round2(r.annualEquityPrepay),
+        annualTotalEquity: round2(r.annualTotalEquity),
+        estimatedSalePrice: round2(r.estimatedSalePrice), totalSellingCosts: round2(r.totalSellingCosts), netBeforeSplit: round2(r.netBeforeSplit),
+        yourShare: round2(r.yourShare), cumulativeTotalPaid: round2(r.cumulativeTotalPaid), cumulativeProfitPaid: round2(r.cumulativeProfitPaid),
+        totalCashInvested: round2(r.totalCashInvested), netGainWaterfall: round2(r.netGainWaterfall), remainingBalance: round2(r.remainingBalance),
+        netCashPayoff: round2(r.netCashPayoff), netGainPayoff: round2(r.netGainPayoff)
+    })));
+
+    const rentVsColumnsDetailed = [
+        { key: "horizon", label: "Horizon" },
+        { key: "betterOption", label: "Better Option", className: (r) => (r.betterOption === "Musharaka" ? "better-mush-text" : "better-rent-text") },
+        { key: "betterBy", label: "Advantage", format: money },
+        { key: "roiMusharaka", label: "ROI (Musharaka)", format: pct },
+        { key: "totalOutOfPocketRent", label: "Total Cost (Rent)", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "totalOutOfPocketMusharaka", label: "Total Cost (Musharaka)", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "effectiveRentCost", label: "Effective Cost (Rent)", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "effectiveMusharakaCostWaterfall", label: "Effective Cost (Musharaka - Waterfall)", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "estimatedSalePrice", label: "Est. Sale Price", format: money },
+        { key: "recognizedOwnership", label: "Recognized Ownership %", format: pct },
+        { key: "rentMonthlyOutflow", label: "Rent Monthly Outflow", format: money },
+        { key: "musharakaMonthlyOutflow", label: "Musharaka Monthly Outflow", format: money },
+        { key: "upfrontRent", label: "Upfront Cash (Rent)", format: money },
+        { key: "upfrontMusharaka", label: "Upfront Cash (Musharaka)", format: money },
+        { key: "cumulativeEquityRegular", label: "Equity (Regular)", format: money },
+        { key: "cumulativeEquityPrepay", label: "Equity (Prepay)", format: money },
+        { key: "totalEquity", label: "Total Equity", format: money },
+        { key: "annualUnitTransfer", label: "Annual Unit Transfer", format: money },
+        { key: "annualShareTransfer", label: "Annual Share Transfer %", format: pct },
+        { key: "cumulativeShareTransfer", label: "Cumulative Share Transfer %", format: pct },
+        { key: "totalSellingCosts", label: "Selling Costs", format: money },
+        { key: "netSaleBeforeSplit", label: "Net Sale Before Split", format: money },
+        { key: "remainingBalance", label: "Remaining Balance", format: money }
+    ];
+    const rentVsColumnsCompact = [
+        { key: "horizon", label: "Horizon" },
+        { key: "betterOption", label: "Better Option", className: (r) => (r.betterOption === "Musharaka" ? "better-mush-text" : "better-rent-text") },
+        { key: "betterBy", label: "Advantage", format: money },
+        { key: "roiMusharaka", label: "ROI (Musharaka)", format: pct },
+        { key: "totalOutOfPocketRent", label: "Total Cost (Rent)", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "totalOutOfPocketMusharaka", label: "Total Cost (Musharaka)", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "effectiveRentCost", label: "Effective Cost (Rent)", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "effectiveMusharakaCostWaterfall", label: "Effective Cost (Musharaka - Waterfall)", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "estimatedSalePrice", label: "Est. Sale Price", format: money },
+        { key: "recognizedOwnership", label: "Recognized Ownership %", format: pct },
+        { key: "rentMonthlyOutflow", label: "Rent Monthly", format: money },
+        { key: "musharakaMonthlyOutflow", label: "Musharaka Monthly", format: money },
+        { key: "upfrontRent", label: "Upfront Rent", format: money },
+        { key: "upfrontMusharaka", label: "Upfront Musharaka", format: money },
+        { key: "annualShareTransfer", label: "Annual Share Transfer %", format: pct },
+        { key: "cumulativeShareTransfer", label: "Cumulative Share Transfer %", format: pct }
+    ];
+    const rentVsRows = buildRentVsRows(model).map((r) => ({
+        ...r,
+        rentMonthlyOutflow: round2(r.rentMonthlyOutflow),
+        musharakaMonthlyOutflow: round2(r.musharakaMonthlyOutflow),
+        upfrontRent: round2(r.upfrontRent),
+        upfrontMusharaka: round2(r.upfrontMusharaka),
+        cumulativeEquityRegular: round2(r.cumulativeEquityRegular),
+        cumulativeEquityPrepay: round2(r.cumulativeEquityPrepay),
+        totalEquity: round2(r.totalEquity),
+        annualUnitTransfer: round2(r.annualUnitTransfer),
+        totalOutOfPocketRent: round2(r.totalOutOfPocketRent),
+        totalOutOfPocketMusharaka: round2(r.totalOutOfPocketMusharaka),
+        effectiveRentCost: round2(r.effectiveRentCost),
+        effectiveMusharakaCostWaterfall: round2(r.effectiveMusharakaCostWaterfall),
+        netPosition: round2(r.netPosition),
+        roiMusharaka: r.roiMusharaka,
+        roiRent: r.roiRent,
+        betterBy: round2(r.betterBy),
+        estimatedSalePrice: round2(r.estimatedSalePrice),
+        totalSellingCosts: round2(r.totalSellingCosts),
+        netSaleBeforeSplit: round2(r.netSaleBeforeSplit),
+        remainingBalance: round2(r.remainingBalance),
+        netGainPayoff: round2(r.netGainPayoff),
+        netSaleLow: round2(r.netSaleLow),
+        netSaleBase: round2(r.netSaleBase),
+        netSaleHigh: round2(r.netSaleHigh),
+        rentOutLow: round2(r.rentOutLow),
+        rentOutBase: round2(r.rentOutBase),
+        rentOutHigh: round2(r.rentOutHigh)
+    }));
+    renderTable("rentVsTable", showDetailRentVs ? rentVsColumnsDetailed : rentVsColumnsCompact, rentVsRows);
+
+    const convVsColumnsDetailed = [
+        { key: "horizon", label: "Horizon" },
+        { key: "betterOption", label: "Better Option", className: (r) => (r.betterOption === "Musharaka" ? "better-mush-text" : "better-rent-text") },
+        { key: "betterBy", label: "Advantage", format: money },
+        { key: "monthlyOutflowMush", label: "Monthly Outflow (Musharaka)", format: money },
+        { key: "monthlyOutflowConv", label: "Monthly Outflow (Conventional)", format: money },
+        { key: "upfrontMusharaka", label: "Upfront Cash (Musharaka)", format: money },
+        { key: "upfrontConventional", label: "Upfront Cash (Conventional)", format: money },
+        { key: "annualPrincipalMush", label: "Annual Principal/Equity (Musharaka)", format: money },
+        { key: "annualPrincipalConv", label: "Annual Principal (Conventional)", format: money },
+        { key: "annualShareTransferMush", label: "Annual Share Transfer % (Musharaka)", format: pct },
+        { key: "annualShareTransferConv", label: "Annual Share Transfer % (Conventional)", format: pct },
+        { key: "recognizedOwnershipMush", label: "Recognized Ownership % (Musharaka)", format: pct },
+        { key: "equityShareConv", label: "Equity Share % (Conventional)", format: pct },
+        { key: "totalOutOfPocketMush", label: "Total Out-of-Pocket (Musharaka)", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "totalOutOfPocketConv", label: "Total Out-of-Pocket (Conventional)", format: money, className: (r) => (r.betterOption === "Conventional" ? "better-rent-cell" : "") },
+        { key: "estimatedSalePrice", label: "Estimated Sale Price", format: money },
+        { key: "totalSellingCosts", label: "Total Selling Costs", format: money },
+        { key: "netSaleBeforeSplit", label: "Net Sale Before Split", format: money },
+        { key: "remainingBalanceMush", label: "Remaining Balance (Musharaka)", format: money },
+        { key: "remainingBalanceConv", label: "Remaining Balance (Conventional)", format: money },
+        { key: "effectiveCostMush", label: "Effective Cost (Musharaka - Waterfall)", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "effectiveCostConv", label: "Effective Cost (Conventional)", format: money, className: (r) => (r.betterOption === "Conventional" ? "better-rent-cell" : "") }
+    ];
+    const convVsColumnsCompact = [
+        { key: "horizon", label: "Horizon" },
+        { key: "betterOption", label: "Better", className: (r) => (r.betterOption === "Musharaka" ? "better-mush-text" : "better-rent-text") },
+        { key: "betterBy", label: "Advantage", format: money },
+        { key: "monthlyOutflowMush", label: "Mush Monthly", format: money },
+        { key: "monthlyOutflowConv", label: "Conv Monthly", format: money },
+        { key: "upfrontMusharaka", label: "Mush Upfront", format: money },
+        { key: "upfrontConventional", label: "Conv Upfront", format: money },
+        { key: "annualShareTransferMush", label: "Mush Transfer %", format: pct },
+        { key: "annualShareTransferConv", label: "Conv Transfer %", format: pct },
+        { key: "effectiveCostMush", label: "Mush Effective Cost", format: money, className: (r) => (r.betterOption === "Musharaka" ? "better-mush-cell" : "") },
+        { key: "effectiveCostConv", label: "Conv Effective Cost", format: money, className: (r) => (r.betterOption === "Conventional" ? "better-rent-cell" : "") }
+    ];
+    const convVsRows = buildConvVsRows(model).map((r) => ({
+        ...r,
+        betterBy: round2(r.betterBy),
+        monthlyOutflowMush: round2(r.monthlyOutflowMush),
+        monthlyOutflowConv: round2(r.monthlyOutflowConv),
+        upfrontMusharaka: round2(r.upfrontMusharaka),
+        upfrontConventional: round2(r.upfrontConventional),
+        annualPrincipalMush: round2(r.annualPrincipalMush),
+        annualPrincipalConv: round2(r.annualPrincipalConv),
+        totalPrincipalMush: round2(r.totalPrincipalMush),
+        totalPrincipalConv: round2(r.totalPrincipalConv),
+        totalOutOfPocketMush: round2(r.totalOutOfPocketMush),
+        totalOutOfPocketConv: round2(r.totalOutOfPocketConv),
+        estimatedSalePrice: round2(r.estimatedSalePrice),
+        totalSellingCosts: round2(r.totalSellingCosts),
+        netSaleBeforeSplit: round2(r.netSaleBeforeSplit),
+        remainingBalanceMush: round2(r.remainingBalanceMush),
+        remainingBalanceConv: round2(r.remainingBalanceConv),
+        netCashAtSaleConv: round2(r.netCashAtSaleConv),
+        effectiveCostMush: round2(r.effectiveCostMush),
+        effectiveCostConv: round2(r.effectiveCostConv)
+    }));
+    renderTable("convVsTable", showDetailConvVs ? convVsColumnsDetailed : convVsColumnsCompact, convVsRows);
 }
 
-function renderExplanationAnswer(topic) {
-    explanationTabLabel.textContent = tabLabels[topic.tab] || '';
-    explanationTitle.textContent = topic.title;
-    explanationLead.textContent = topic.meta;
-    explanationFormula.textContent = topic.formula;
-    explanationCurrent.textContent = topic.current;
-    explanationWhy.textContent = topic.why;
-}
-
-function renderModalExplanationAnswer(topic) {
-    modalExplanationTabLabel.textContent = tabLabels[topic.tab] || '';
-    modalExplanationTitle.textContent = topic.title;
-    modalExplanationLead.textContent = topic.meta;
-    modalExplanationFormula.textContent = topic.formula;
-    modalExplanationCurrent.textContent = topic.current;
-    modalExplanationWhy.textContent = topic.why;
-}
-
-function getExplanationTopic(topicId, tabName) {
-    if (!latestExplanationContext) {
-        return null;
-    }
-
-    const topics = buildExplanationTopics(latestExplanationContext);
-    return topics.find((topic) => topic.id === topicId && (!tabName || topic.tab === tabName)) || null;
-}
-
-function openExplanationModal(topic) {
-    if (!topic || !explanationModal) {
-        return;
-    }
-
-    renderModalExplanationAnswer(topic);
-    explanationModal.hidden = false;
-    document.body.style.overflow = 'hidden';
-    closeExplanationModalButton?.focus();
-}
-
-function closeExplanationModal() {
-    if (!explanationModal) {
-        return;
-    }
-
-    explanationModal.hidden = true;
-    document.body.style.overflow = '';
-}
-
-function openExplanationTopic(topicId, tabName) {
-    explanationState.selectedTopicId = topicId;
-    explanationState.filter = '';
-
-    if (explanationSearchInput) {
-        explanationSearchInput.value = '';
-    }
-
-    if (tabName && tabName !== explanationState.activeTab) {
-        setActiveTab(tabName);
-    } else {
-        renderExplanationPanel();
-    }
-
-    openExplanationModal(getExplanationTopic(topicId, tabName || explanationState.activeTab));
-}
-
-function renderExplanationPanel() {
-    if (!latestExplanationContext) {
-        return;
-    }
-
-    const topics = buildExplanationTopics(latestExplanationContext);
-    const terms = explanationState.filter.split(/\s+/).filter(Boolean);
-    const visibleTopics = topics.filter((topic) => {
-        if (topic.tab !== explanationState.activeTab) {
-            return false;
-        }
-
-        if (!terms.length) {
-            return true;
-        }
-
-        const haystack = `${topic.title} ${topic.meta} ${topic.keywords}`.toLowerCase();
-        return terms.every((term) => haystack.includes(term));
-    });
-
-    if (!visibleTopics.some((topic) => topic.id === explanationState.selectedTopicId)) {
-        explanationState.selectedTopicId = visibleTopics[0] ? visibleTopics[0].id : null;
-    }
-
-    if (!visibleTopics.length) {
-        explanationTopicList.innerHTML = '<p class="explainer-empty">No matching questions for this tab yet. Try a simpler term like payment, income, transfer, or verdict.</p>';
-        explanationTabLabel.textContent = tabLabels[explanationState.activeTab] || '';
-        explanationTitle.textContent = 'No matching question found';
-        explanationLead.textContent = 'Search results update per tab, so only topics relevant to the current calculator view are shown.';
-        explanationFormula.textContent = '-';
-        explanationCurrent.textContent = '-';
-        explanationWhy.textContent = '-';
-        return;
-    }
-
-    explanationTopicList.innerHTML = visibleTopics.map((topic) => `
-        <button class="explainer-topic${topic.id === explanationState.selectedTopicId ? ' active' : ''}" type="button" data-topic-id="${topic.id}">
-            <span class="explainer-topic-title">${topic.title}</span>
-            <span class="explainer-topic-meta">${topic.meta}</span>
-        </button>
-    `).join('');
-
-    explanationTopicList.querySelectorAll('[data-topic-id]').forEach((button) => {
-        button.addEventListener('click', () => {
-            explanationState.selectedTopicId = button.dataset.topicId;
-            renderExplanationPanel();
-        });
-    });
-
-    const selectedTopic = visibleTopics.find((topic) => topic.id === explanationState.selectedTopicId) || visibleTopics[0];
-    explanationState.selectedTopicId = selectedTopic.id;
-    renderExplanationAnswer(selectedTopic);
-}
-
-function renderSummary(result, inputs) {
-    outputElements.monthlyPayment.textContent = currencyFormatter.format(result.monthlyPayment);
-    outputElements.stressTestedPayment.textContent = currencyFormatter.format(result.stressTestedPayment);
-    outputElements.propertyTax.textContent = currencyFormatter.format(result.propertyTaxMonthly);
-    outputElements.condoFee.textContent = currencyFormatter.format(result.monthlyCondoFee);
-    outputElements.qualifyingHousingCost.textContent = currencyFormatter.format(result.qualifyingHousingCost);
-    outputElements.requiredMonthlyIncome.textContent = currencyFormatter.format(result.requiredMonthlyIncome);
-    outputElements.requiredAnnualIncome.textContent = currencyFormatter.format(result.requiredAnnualIncome);
-    outputElements.incomeMultiple.textContent = `${result.incomeMultiple.toFixed(2)}x`;
-    outputElements.financingAmount.textContent = currencyFormatter.format(result.financingAmount);
-    outputElements.termMonths.textContent = numberFormatter.format(result.termMonths);
-    outputElements.finalBalance.textContent = currencyFormatter.format(result.finalBalance);
-    outputElements.finalOwnership.textContent = percentFormatter.format(result.finalOwnership);
-    outputElements.totalSharePurchased.textContent = currencyFormatter.format(result.totalSharePurchased);
-    outputElements.latestQuarterTransfer.textContent = percentFormatter.format(result.latestQuarterTransfer || 0);
-    renderRentComparison(result.rentComparison);
-
-    const messages = [];
-    let invalid = false;
-
-    if (inputs.downPayment > inputs.purchasePrice) {
-        invalid = true;
-        messages.push('Down payment cannot be greater than purchase price.');
-    }
-
-    if (result.financingAmount <= 0) {
-        invalid = true;
-        messages.push('Financing amount must be greater than zero.');
-    }
-
-    if (result.schedule.length && result.schedule[0].paymentTowardShareCostPrice <= 0) {
-        invalid = true;
-        messages.push('Monthly payment is not large enough to cover the first month profit amount.');
-    }
-
-    if (!invalid) {
-        messages.push('Affordability follows the screenshot logic, and quarterly transfer values are shown on the first period of each three-month block.');
-    }
-
-    outputElements.validationMessage.textContent = messages.join(' ');
-    outputElements.validationMessage.classList.toggle('invalid', invalid);
-}
-
-function renderRentComparison(rentComparison) {
-    const horizonPoint = rentComparison.horizonPoint;
-    const verdictPoint = rentComparison.tenYearPoint || horizonPoint;
-    const isNetWorthMode = rentComparison.comparisonMode === 'networth';
-
-    outputElements.rentOwnerMonthlyOutflow.textContent = currencyFormatter.format(rentComparison.currentOwnerMonthlyOutflow);
-    outputElements.rentMonthlyRenterOutflow.textContent = currencyFormatter.format(rentComparison.currentRenterMonthlyOutflow);
-    outputElements.rentMonthlyGap.textContent = currencyFormatter.format(rentComparison.currentMonthlyGap);
-
-    outputElements.rentComparisonModeNote.textContent = isNetWorthMode
-        ? 'Net worth mode compares owner stake in the home against the renter portfolio, while still tracking cash spent on both sides.'
-        : 'Cash mode compares only what each side spends over time. It ignores home value growth and renter investment growth.';
-
-    if (isNetWorthMode) {
-        outputElements.rentMetricOneLabel.textContent = 'Owner stake value';
-        outputElements.rentMetricOneValue.textContent = horizonPoint ? currencyFormatter.format(horizonPoint.ownerStakeValue) : 'N/A';
-        outputElements.rentMetricOneMeta.textContent = 'Client ownership percentage times the appreciated home value at the horizon.';
-        outputElements.rentMetricTwoLabel.textContent = 'Renter portfolio';
-        outputElements.rentMetricTwoValue.textContent = horizonPoint ? currencyFormatter.format(horizonPoint.renterPortfolio) : 'N/A';
-        outputElements.rentMetricTwoMeta.textContent = 'Down payment less moving cost, plus the monthly savings difference invested over time.';
-        outputElements.rentMetricThreeLabel.textContent = 'Net worth gap';
-        outputElements.rentMetricThreeValue.textContent = horizonPoint ? currencyFormatter.format(horizonPoint.netWorthGap) : 'N/A';
-        outputElements.rentMetricThreeMeta.textContent = 'Owner stake value minus renter portfolio value at the horizon.';
-        outputElements.rentTableModeNote.textContent = 'Year-end snapshot of home value, owner stake, renter portfolio, and cumulative cash outflow under both paths.';
-        renderRentComparisonHeadings([
-            'Year',
-            'Toronto Home Value',
-            'Owner Stake Value',
-            'Owner Cumulative Outflow',
-            'Renter Portfolio',
-            'Renter Cumulative Outflow',
-            'Net Worth Gap',
-        ]);
-    } else {
-        outputElements.rentMetricOneLabel.textContent = 'Owner cumulative outflow';
-        outputElements.rentMetricOneValue.textContent = horizonPoint ? currencyFormatter.format(horizonPoint.ownerCumulativeOutflow) : 'N/A';
-        outputElements.rentMetricOneMeta.textContent = 'Total cash spent by the owner by the comparison horizon.';
-        outputElements.rentMetricTwoLabel.textContent = 'Renter cumulative outflow';
-        outputElements.rentMetricTwoValue.textContent = horizonPoint ? currencyFormatter.format(horizonPoint.renterCumulativeOutflow) : 'N/A';
-        outputElements.rentMetricTwoMeta.textContent = 'Total rent, renter insurance, and moving cost paid by the renter by the comparison horizon.';
-        outputElements.rentMetricThreeLabel.textContent = 'Cumulative outflow gap';
-        outputElements.rentMetricThreeValue.textContent = horizonPoint ? currencyFormatter.format(horizonPoint.outflowGap) : 'N/A';
-        outputElements.rentMetricThreeMeta.textContent = 'Owner cumulative outflow minus renter cumulative outflow at the horizon.';
-        outputElements.rentTableModeNote.textContent = 'Year-end snapshot of owner cash outflow, renter cash outflow, and the cumulative difference under both paths.';
-        renderRentComparisonHeadings([
-            'Year',
-            'Owner Monthly Outflow',
-            'Owner Cumulative Outflow',
-            'Renter Monthly Outflow',
-            'Renter Cumulative Outflow',
-            'Cumulative Outflow Gap',
-        ]);
-    }
-
-    renderRentVerdict(verdictPoint);
-
-    const rows = rentComparison.timeline.map((row) => {
-        if (isNetWorthMode) {
-            return `
-        <tr>
-            <td>${numberFormatter.format(row.year)}</td>
-            <td>${currencyFormatter.format(row.homeValue)}</td>
-            <td>${currencyFormatter.format(row.ownerStakeValue)}</td>
-            <td>${currencyFormatter.format(row.ownerCumulativeOutflow)}</td>
-            <td>${currencyFormatter.format(row.renterPortfolio)}</td>
-            <td>${currencyFormatter.format(row.renterCumulativeOutflow)}</td>
-            <td>${currencyFormatter.format(row.netWorthGap)}</td>
-        </tr>
-    `;
-        }
-
-        return `
-        <tr>
-            <td>${numberFormatter.format(row.year)}</td>
-            <td>${currencyFormatter.format(row.ownerMonthlyOutflow)}</td>
-            <td>${currencyFormatter.format(row.ownerCumulativeOutflow)}</td>
-            <td>${currencyFormatter.format(row.renterMonthlyOutflow)}</td>
-            <td>${currencyFormatter.format(row.renterCumulativeOutflow)}</td>
-            <td>${currencyFormatter.format(row.outflowGap)}</td>
-        </tr>
-    `;
-    }).join('');
-
-    rentComparisonBody.innerHTML = rows;
-}
-
-function renderRentComparisonHeadings(headings) {
-    rentComparisonHeadRow.innerHTML = headings.map((heading) => `<th>${heading}</th>`).join('');
-}
-
-function renderRentVerdict(verdictPoint) {
-    if (!verdictPoint) {
-        outputElements.rentVerdictWindow.textContent = 'Comparison window unavailable';
-        outputElements.rentVerdictHeadline.textContent = 'Add enough data to see a verdict';
-        outputElements.rentVerdictSummary.textContent = 'Increase the comparison horizon to at least 1 year.';
-        outputElements.rentVerdictGap.textContent = 'N/A';
-        outputElements.rentVerdictModeNote.textContent = '';
-        outputElements.rentVerdictReasonOneValue.textContent = 'N/A';
-        outputElements.rentVerdictReasonOneNote.textContent = '';
-        outputElements.rentVerdictReasonTwoValue.textContent = 'N/A';
-        outputElements.rentVerdictReasonTwoNote.textContent = '';
-        outputElements.rentVerdictReasonThreeValue.textContent = 'N/A';
-        outputElements.rentVerdictReasonThreeNote.textContent = '';
-        return;
-    }
-
-    const isNetWorthMode = verdictPoint.netWorthGap !== undefined && document.querySelector('input[name="comparisonMode"]:checked')?.value === 'networth';
-    const windowLabel = verdictPoint.year >= 10 ? 'After 10 years' : `After ${verdictPoint.year} years`;
-
-    outputElements.rentVerdictWindow.textContent = windowLabel;
-
-    if (isNetWorthMode) {
-        const ownerAhead = verdictPoint.netWorthGap >= 0;
-        outputElements.rentVerdictModeNote.textContent = 'This verdict uses owner stake value versus the renter portfolio after 10 years, while still surfacing total cash spent.';
-        outputElements.rentVerdictHeadline.textContent = ownerAhead
-            ? 'Musharaka is ahead on net worth'
-            : 'Renting is ahead on net worth';
-        outputElements.rentVerdictSummary.textContent = ownerAhead
-            ? 'The owner stake in the home is larger than the renter portfolio at this point.'
-            : 'The renter portfolio has grown larger than the owner stake in the home at this point.';
-        outputElements.rentVerdictGap.textContent = currencyFormatter.format(Math.abs(verdictPoint.netWorthGap));
-
-        outputElements.rentVerdictReasonOneLabel.textContent = 'Owner stake value';
-        outputElements.rentVerdictReasonOneValue.textContent = currencyFormatter.format(verdictPoint.ownerStakeValue);
-        outputElements.rentVerdictReasonOneNote.textContent = `Based on the appreciated home value and Musharaka ownership percentage by year ${verdictPoint.year}.`;
-
-        outputElements.rentVerdictReasonTwoLabel.textContent = 'Renter portfolio';
-        outputElements.rentVerdictReasonTwoValue.textContent = currencyFormatter.format(verdictPoint.renterPortfolio);
-        outputElements.rentVerdictReasonTwoNote.textContent = 'Built from the down payment less moving cost, plus the monthly savings difference invested over time.';
-
-        outputElements.rentVerdictReasonThreeLabel.textContent = 'Cumulative cash outflow';
-        outputElements.rentVerdictReasonThreeValue.textContent = currencyFormatter.format(Math.abs(verdictPoint.outflowGap));
-        outputElements.rentVerdictReasonThreeNote.textContent = verdictPoint.outflowGap >= 0
-            ? 'Ownership required this much more cumulative cash outflow than renting over the same period.'
-            : 'Renting required this much more cumulative cash outflow than ownership over the same period.';
-        return;
-    }
-
-    const rentingAhead = verdictPoint.outflowGap >= 0;
-    outputElements.rentVerdictModeNote.textContent = 'This verdict uses cumulative cash spent only. It ignores home value growth and renter investment growth.';
-    outputElements.rentVerdictHeadline.textContent = rentingAhead
-        ? 'Renting requires less cash over this period'
-        : 'Musharaka requires less cash over this period';
-    outputElements.rentVerdictSummary.textContent = rentingAhead
-        ? 'Cumulative rent paid stays below total owner cash outflow over the comparison window.'
-        : 'Total owner cash outflow stays below cumulative rent paid over the comparison window.';
-    outputElements.rentVerdictGap.textContent = currencyFormatter.format(Math.abs(verdictPoint.outflowGap));
-
-    outputElements.rentVerdictReasonOneLabel.textContent = 'Owner cumulative outflow';
-    outputElements.rentVerdictReasonOneValue.textContent = currencyFormatter.format(verdictPoint.ownerCumulativeOutflow);
-    outputElements.rentVerdictReasonOneNote.textContent = `Includes Musharaka installments, property tax, condo fees, utilities, insurance, maintenance, and prepayment through year ${verdictPoint.year}.`;
-
-    outputElements.rentVerdictReasonTwoLabel.textContent = 'Renter cumulative outflow';
-    outputElements.rentVerdictReasonTwoValue.textContent = currencyFormatter.format(verdictPoint.renterCumulativeOutflow);
-    outputElements.rentVerdictReasonTwoNote.textContent = 'Includes cumulative rent, renter insurance, and one-time moving cost with annual rent escalation applied.';
-
-    outputElements.rentVerdictReasonThreeLabel.textContent = 'Year-end rent level';
-    outputElements.rentVerdictReasonThreeValue.textContent = currencyFormatter.format(verdictPoint.yearEndRent);
-    outputElements.rentVerdictReasonThreeNote.textContent = 'This is the monthly rent level reached by the end of the comparison year.';
-}
-
-function renderComparison(result) {
-    const fiveYearPoint = result.comparisonTimeline[Math.min(4, result.comparisonTimeline.length - 1)] || null;
-    const paymentGap = result.conventional.monthlyPayment - result.monthlyPayment;
-    const payoffGap = result.conventional.payoffMonth - result.schedule.length;
-
-    outputElements.compareMusharakaPayment.textContent = currencyFormatter.format(result.monthlyPayment);
-    outputElements.compareMusharakaCost.textContent = currencyFormatter.format(result.totalMusharakaCost);
-    outputElements.compareConventionalPayment.textContent = currencyFormatter.format(result.conventional.monthlyPayment);
-    outputElements.compareConventionalCost.textContent = currencyFormatter.format(result.conventional.totalInterestCost);
-    outputElements.comparePaymentGap.textContent = currencyFormatter.format(paymentGap);
-    outputElements.compareFiveYearBalanceGap.textContent = fiveYearPoint ? currencyFormatter.format(fiveYearPoint.balanceGap) : 'N/A';
-    outputElements.compareFiveYearEquityGap.textContent = fiveYearPoint ? percentFormatter.format(fiveYearPoint.equityGap) : 'N/A';
-    outputElements.comparePayoffGap.textContent = `${numberFormatter.format(payoffGap)} months`;
-
-    renderComparisonTimeline(result.comparisonTimeline);
-}
-
-function renderComparisonTimeline(timeline) {
-    const rows = timeline.map((row) => `
-        <tr>
-            <td>${numberFormatter.format(row.year)}</td>
-            <td>${currencyFormatter.format(row.musharakaBalance)}</td>
-            <td>${percentFormatter.format(row.musharakaOwnership)}</td>
-            <td>${currencyFormatter.format(row.musharakaCumulativeCost)}</td>
-            <td>${currencyFormatter.format(row.conventionalBalance)}</td>
-            <td>${percentFormatter.format(row.conventionalEquity)}</td>
-            <td>${currencyFormatter.format(row.conventionalCumulativeCost)}</td>
-            <td>${currencyFormatter.format(row.costGap)}</td>
-        </tr>
-    `).join('');
-
-    comparisonBody.innerHTML = rows;
-}
-
-function buildYearlySchedule(schedule) {
-    const yearlySchedule = [];
-
-    for (let startIndex = 0; startIndex < schedule.length; startIndex += 12) {
-        const yearRows = schedule.slice(startIndex, startIndex + 12);
-        if (!yearRows.length) {
-            continue;
-        }
-
-        const firstRow = yearRows[0];
-        const lastRow = yearRows[yearRows.length - 1];
-
-        yearlySchedule.push({
-            year: yearlySchedule.length + 1,
-            beginningBalance: firstRow.beginningBalance,
-            totalInstallments: clampCurrency(yearRows.reduce((sum, row) => sum + row.totalInstallment, 0)),
-            totalFundProfit: clampCurrency(yearRows.reduce((sum, row) => sum + row.paymentTowardFundProfit, 0)),
-            totalShareCost: clampCurrency(yearRows.reduce((sum, row) => sum + row.paymentTowardShareCostPrice, 0)),
-            totalPrepayment: clampCurrency(yearRows.reduce((sum, row) => sum + row.prepayment, 0)),
-            totalSharePurchased: clampCurrency(yearRows.reduce((sum, row) => sum + row.sharePurchasedThisMonth, 0)),
-            endingBalance: lastRow.endingBalance,
-            yearEndOwnership: lastRow.clientOwnership,
+function setupTabs() {
+    const buttons = Array.from(document.querySelectorAll(".tab-btn"));
+    const panels = Array.from(document.querySelectorAll(".tab-panel"));
+    for (const btn of buttons) {
+        btn.addEventListener("click", () => {
+            const target = btn.dataset.target;
+            for (const b of buttons) {
+                b.classList.toggle("active", b === btn);
+                b.setAttribute("aria-selected", b === btn ? "true" : "false");
+            }
+            for (const panel of panels) {
+                panel.classList.toggle("active", panel.id === target);
+            }
         });
     }
-
-    return yearlySchedule;
 }
 
-function renderScheduleHeader() {
-    if (scheduleViewState.current === 'yearly') {
-        scheduleSectionTitle.textContent = 'Yearly Schedule';
-        scheduleSectionNote.textContent = 'This view rolls the monthly schedule into year-by-year totals so you can review balance reduction, financing cost, share purchases, and ownership growth more quickly.';
-        scheduleTableHead.innerHTML = `
-            <tr>
-                <th>Year</th>
-                <th>Beginning Fund Balance</th>
-                <th>Total Installments</th>
-                <th>Total Fund Profit</th>
-                <th>Total Share Cost Price</th>
-                <th>Total Pre-payment</th>
-                <th>Total Share Purchased</th>
-                <th>Ending Fund Balance</th>
-                <th>Year-end Ownership</th>
-            </tr>
-        `;
-        return;
-    }
-
-    scheduleSectionTitle.textContent = 'Monthly Schedule';
-    scheduleSectionNote.textContent = 'Quarterly values are shown on period 1, 4, 7, and so on. Quarterly Sale Price is modeled as three monthly installments, and Quarterly Unit Transfer is the real three-month cumulative share purchase amount.';
-    scheduleTableHead.innerHTML = `
-        <tr>
-            <th>Period</th>
-            <th>Beginning Musharaka Fund's Contribution Balance</th>
-            <th>
-                <span class="th-label">Total Installment
-                    <button
-                        class="help-trigger"
-                        type="button"
-                        data-explanation-target="monthly-payment"
-                        data-explanation-tab="calculator"
-                        aria-label="Explain total installment"
-                    >?</button>
-                </span>
-            </th>
-            <th>
-                <span class="th-label">Payment Towards Fund's Profit
-                    <button
-                        class="help-trigger"
-                        type="button"
-                        data-explanation-target="share-purchase"
-                        data-explanation-tab="calculator"
-                        aria-label="Explain payment towards fund profit"
-                    >?</button>
-                </span>
-            </th>
-            <th>
-                <span class="th-label">Payment Towards Share Cost Price
-                    <button
-                        class="help-trigger"
-                        type="button"
-                        data-explanation-target="share-purchase"
-                        data-explanation-tab="calculator"
-                        aria-label="Explain payment towards share cost price"
-                    >?</button>
-                </span>
-            </th>
-            <th>Ending Fund's Contribution Balance</th>
-            <th>Quarterly Sale Price</th>
-            <th>Quarterly Share Transfer %</th>
-            <th>
-                <span class="th-label">Quarterly Unit Transfer
-                    <button
-                        class="help-trigger"
-                        type="button"
-                        data-explanation-target="quarterly-transfer"
-                        data-explanation-tab="calculator"
-                        aria-label="Explain quarterly unit transfer"
-                    >?</button>
-                </span>
-            </th>
-            <th>
-                <span class="th-label">Annual % Transfer
-                    <button
-                        class="help-trigger"
-                        type="button"
-                        data-explanation-target="quarterly-transfer"
-                        data-explanation-tab="calculator"
-                        aria-label="Explain annual transfer percentage"
-                    >?</button>
-                </span>
-            </th>
-            <th>Client Ownership Percentage</th>
-            <th>
-                <span class="th-label">Pre-payment
-                    <button
-                        class="help-trigger"
-                        type="button"
-                        data-explanation-target="share-purchase"
-                        data-explanation-tab="calculator"
-                        aria-label="Explain prepayment"
-                    >?</button>
-                </span>
-            </th>
-        </tr>
-    `;
-}
-
-function renderSchedule(schedule) {
-    renderScheduleHeader();
-
-    if (scheduleViewState.current === 'yearly') {
-        const yearlyRows = buildYearlySchedule(schedule).map((row) => `
-        <tr>
-            <td>${numberFormatter.format(row.year)}</td>
-            <td>${currencyFormatter.format(row.beginningBalance)}</td>
-            <td>${currencyFormatter.format(row.totalInstallments)}</td>
-            <td>${currencyFormatter.format(row.totalFundProfit)}</td>
-            <td>${currencyFormatter.format(row.totalShareCost)}</td>
-            <td>${currencyFormatter.format(row.totalPrepayment)}</td>
-            <td>${currencyFormatter.format(row.totalSharePurchased)}</td>
-            <td>${currencyFormatter.format(row.endingBalance)}</td>
-            <td>${percentFormatter.format(row.yearEndOwnership)}</td>
-        </tr>
-    `).join('');
-
-        scheduleBody.innerHTML = yearlyRows;
-        syncStickyHeaderStructure();
-        return;
-    }
-
-    const rows = schedule.map((row) => `
-    <tr>
-      <td>${numberFormatter.format(row.period)}</td>
-      <td>${currencyFormatter.format(row.beginningBalance)}</td>
-      <td>${currencyFormatter.format(row.totalInstallment)}</td>
-      <td>${currencyFormatter.format(row.paymentTowardFundProfit)}</td>
-      <td>${currencyFormatter.format(row.paymentTowardShareCostPrice)}</td>
-      <td>${currencyFormatter.format(row.endingBalance)}</td>
-            <td>${row.quarterlySalePrice === null ? '' : currencyFormatter.format(row.quarterlySalePrice)}</td>
-      <td>${row.quarterlyShareTransfer === null ? '' : percentFormatter.format(row.quarterlyShareTransfer)}</td>
-      <td>${row.quarterlyUnitTransfer === null ? '' : numberFormatter.format(row.quarterlyUnitTransfer)}</td>
-            <td>${row.annualTransfer === null ? '' : percentFormatter.format(row.annualTransfer)}</td>
-      <td>${percentFormatter.format(row.clientOwnership)}</td>
-      <td>${currencyFormatter.format(row.prepayment)}</td>
-    </tr>
-  `).join('');
-
-    scheduleBody.innerHTML = rows;
-    syncStickyHeaderStructure();
-}
-
-function syncStickyHeaderStructure() {
-    const sourceHeaderCells = Array.from(scheduleTableHead.querySelectorAll('th'));
-    if (!sourceHeaderCells.length) {
-        return;
-    }
-
-    stickyScheduleHeader.innerHTML = `<table aria-hidden="true"><thead>${scheduleTableHead.innerHTML}</thead></table>`;
-
-    const stickyTable = stickyScheduleHeader.querySelector('table');
-    const stickyHeaderCells = Array.from(stickyScheduleHeader.querySelectorAll('th'));
-
-    stickyTable.style.width = `${scheduleTable.getBoundingClientRect().width}px`;
-
-    sourceHeaderCells.forEach((cell, index) => {
-        if (stickyHeaderCells[index]) {
-            stickyHeaderCells[index].style.width = `${cell.getBoundingClientRect().width}px`;
-        }
-    });
-
-    syncStickyHeaderPosition();
-}
-
-function syncStickyHeaderPosition() {
-    const calculatorPanel = document.querySelector('[data-panel="calculator"]');
-    if (!calculatorPanel || !calculatorPanel.classList.contains('active')) {
-        stickyScheduleHeader.classList.remove('visible');
-        return;
-    }
-
-    const sourceHeaderRect = scheduleTableHead.getBoundingClientRect();
-    const tableRect = scheduleTable.getBoundingClientRect();
-    const wrapRect = scheduleTableWrap.getBoundingClientRect();
-    const stickyTop = 12;
-    const shouldShow = sourceHeaderRect.top < stickyTop && tableRect.bottom > stickyTop + sourceHeaderRect.height;
-
-    stickyScheduleHeader.classList.toggle('visible', shouldShow);
-
-    if (!shouldShow) {
-        return;
-    }
-
-    stickyScheduleHeader.style.left = `${wrapRect.left}px`;
-    stickyScheduleHeader.style.width = `${wrapRect.width}px`;
-
-    const stickyTable = stickyScheduleHeader.querySelector('table');
-    if (stickyTable) {
-        stickyTable.style.transform = `translateX(-${scheduleTableWrap.scrollLeft}px)`;
-    }
-}
-
-function setActiveTab(tabName) {
-    explanationState.activeTab = tabName;
-    tabButtons.forEach((button) => {
-        button.classList.toggle('active', button.dataset.tab === tabName);
-    });
-
-    tabPanels.forEach((panel) => {
-        panel.classList.toggle('active', panel.dataset.panel === tabName);
-    });
-
-    syncStickyHeaderStructure();
-    syncStickyHeaderPosition();
-    renderExplanationPanel();
-}
-
-function updateCalculator() {
-    const inputs = readInputs();
-    const conventionalInputs = readConventionalInputs();
-    const rentInputs = readRentInputs();
-    const result = buildSchedule(inputs);
-    const conventionalResult = buildSchedule(conventionalInputs);
-    const rentTabMusharakaInputs = buildRentTabInputs(rentInputs);
-    const rentTabResult = buildSchedule(rentTabMusharakaInputs);
-    result.rentComparison = buildRentComparison(rentTabMusharakaInputs, rentTabResult, rentInputs);
-    latestExplanationContext = {
-        inputs,
-        result,
-        conventionalInputs,
-        conventionalResult,
-        rentInputs,
-        rentTabResult,
-        rentComparison: result.rentComparison,
-    };
-    renderSummary(result, inputs);
-    renderComparison(conventionalResult);
-    renderSchedule(result.schedule);
-    renderExplanationPanel();
-}
-
-function setScheduleView(viewName) {
-    scheduleViewState.current = viewName;
-    scheduleViewButtons.forEach((button) => {
-        const isActive = button.dataset.scheduleView === viewName;
-        button.classList.toggle('active', isActive);
-        button.setAttribute('aria-selected', String(isActive));
-    });
-
-    if (latestExplanationContext) {
-        renderSchedule(latestExplanationContext.result.schedule);
-    }
-}
-
-function resetDefaults() {
-    Object.entries(defaultInputs).forEach(([key, value]) => {
-        const input = document.querySelector(`#${key}`);
-        if (input) {
-            input.value = value;
-        }
-    });
-    updateCalculator();
-}
-
-form.addEventListener('input', updateCalculator);
-conventionalComparisonForm.addEventListener('input', updateCalculator);
-rentComparisonForm.addEventListener('input', updateCalculator);
-resetDefaultsButton.addEventListener('click', resetDefaults);
-scheduleTableWrap.addEventListener('scroll', syncStickyHeaderPosition);
-window.addEventListener('scroll', syncStickyHeaderPosition, { passive: true });
-window.addEventListener('resize', syncStickyHeaderStructure);
-explanationSearchInput.addEventListener('input', (event) => {
-    explanationState.filter = event.target.value.trim().toLowerCase();
-    renderExplanationPanel();
-});
-document.addEventListener('click', (event) => {
-    const trigger = event.target.closest('[data-explanation-target]');
-    if (!trigger) {
-        return;
-    }
-
-    event.preventDefault();
-    openExplanationTopic(trigger.dataset.explanationTarget, trigger.dataset.explanationTab || explanationState.activeTab);
-});
-closeExplanationModalButton?.addEventListener('click', closeExplanationModal);
-explanationModal?.addEventListener('click', (event) => {
-    if (event.target instanceof HTMLElement && event.target.hasAttribute('data-modal-close')) {
-        closeExplanationModal();
-    }
-});
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && explanationModal && !explanationModal.hidden) {
-        closeExplanationModal();
-    }
-});
-tabButtons.forEach((button) => {
-    button.addEventListener('click', () => setActiveTab(button.dataset.tab));
-});
-scheduleViewButtons.forEach((button) => {
-    button.addEventListener('click', () => setScheduleView(button.dataset.scheduleView));
-});
-
-updateCalculator();
+document.getElementById("runBtn").addEventListener("click", render);
+setupTabs();
+document.getElementById("showDetailQuarterly")?.addEventListener("change", render);
+document.getElementById("showDetailAnnual")?.addEventListener("change", render);
+document.getElementById("showDetailSale")?.addEventListener("change", render);
+document.getElementById("showDetailRentVs")?.addEventListener("change", render);
+document.getElementById("showDetailConvVs")?.addEventListener("change", render);
+[
+    "monthlyRent",
+    "tenantInsuranceMonthly",
+    "utilitiesMonthly",
+    "annualRentGrowthRate",
+    "rentDeposit",
+    "movingCosts",
+    "propertyTaxMonthly",
+    "homeInsuranceMonthly",
+    "musharakaUtilitiesMonthly",
+    "maintenanceMonthly",
+    "sensitivityDeltaPct",
+    "convMortgageAmount",
+    "convInitialRate",
+    "convAmortMonths",
+    "convLenderFees",
+    "convLegalFeesClosing",
+    "convAppraisalFees",
+    "convInsurancePremium",
+    "convOtherClosingCosts"
+].forEach((id) => document.getElementById(id)?.addEventListener("input", render));
+document.getElementById("convResetSchedule")?.addEventListener("input", render);
+document.getElementById("convPrepaymentSchedule")?.addEventListener("input", render);
+render();
