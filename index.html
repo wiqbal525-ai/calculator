@@ -172,6 +172,69 @@
 
       <section class="panel">
         <h2>Schedules & Summaries</h2>
+        <h3>Rent Inputs</h3>
+        <div class="grid">
+          <label
+            >Monthly Rent
+            <input
+              id="monthlyRent"
+              type="number"
+              min="0"
+              step="50"
+              value="2500"
+            />
+          </label>
+          <label
+            >Tenant Insurance (Monthly)
+            <input
+              id="tenantInsuranceMonthly"
+              type="number"
+              min="0"
+              step="10"
+              value="0"
+            />
+          </label>
+          <label
+            >Utilities (Monthly)
+            <input
+              id="utilitiesMonthly"
+              type="number"
+              min="0"
+              step="10"
+              value="0"
+            />
+          </label>
+          <label
+            >Annual Rent Growth (%)
+            <input
+              id="annualRentGrowthRate"
+              type="number"
+              min="0"
+              step="0.1"
+              value="2.5"
+            />
+          </label>
+          <label
+            >Rent Deposit
+            <input
+              id="rentDeposit"
+              type="number"
+              min="0"
+              step="100"
+              value="0"
+            />
+          </label>
+          <label
+            >Moving Costs
+            <input
+              id="movingCosts"
+              type="number"
+              min="0"
+              step="100"
+              value="0"
+            />
+          </label>
+        </div>
         <div class="tabs" role="tablist" aria-label="Result Tabs">
           <button
             class="tab-btn active"
@@ -233,6 +296,16 @@
           >
             Musharaka vs Conventional
           </button>
+          <button
+            class="tab-btn"
+            id="tab-rent-conv"
+            data-target="panel-rent-conv"
+            role="tab"
+            aria-selected="false"
+            type="button"
+          >
+            Rent vs Conventional
+          </button>
         </div>
 
         <div
@@ -291,69 +364,6 @@
           role="tabpanel"
           aria-labelledby="tab-rent-vs"
         >
-          <h3>Rent Inputs</h3>
-          <div class="grid">
-            <label
-              >Monthly Rent
-              <input
-                id="monthlyRent"
-                type="number"
-                min="0"
-                step="50"
-                value="2500"
-              />
-            </label>
-            <label
-              >Tenant Insurance (Monthly)
-              <input
-                id="tenantInsuranceMonthly"
-                type="number"
-                min="0"
-                step="10"
-                value="0"
-              />
-            </label>
-            <label
-              >Utilities (Monthly)
-              <input
-                id="utilitiesMonthly"
-                type="number"
-                min="0"
-                step="10"
-                value="0"
-              />
-            </label>
-            <label
-              >Annual Rent Growth (%)
-              <input
-                id="annualRentGrowthRate"
-                type="number"
-                min="0"
-                step="0.1"
-                value="2.5"
-              />
-            </label>
-            <label
-              >Rent Deposit
-              <input
-                id="rentDeposit"
-                type="number"
-                min="0"
-                step="100"
-                value="0"
-              />
-            </label>
-            <label
-              >Moving Costs
-              <input
-                id="movingCosts"
-                type="number"
-                min="0"
-                step="100"
-                value="0"
-              />
-            </label>
-          </div>
           <h3>Musharaka Monthly Carry Costs</h3>
           <div class="grid">
             <label
@@ -394,19 +404,6 @@
                 min="0"
                 step="25"
                 value="0"
-              />
-            </label>
-          </div>
-          <h3>Opportunity Cost & Sensitivity</h3>
-          <div class="grid">
-            <label
-              >Sensitivity Delta (%)
-              <input
-                id="sensitivityDeltaPct"
-                type="number"
-                min="0"
-                step="0.1"
-                value="1"
               />
             </label>
           </div>
@@ -480,7 +477,7 @@
                 type="number"
                 min="0"
                 step="100"
-                value="2000"
+                value="0"
               />
             </label>
             <label
@@ -490,7 +487,7 @@
                 type="number"
                 min="0"
                 step="50"
-                value="550"
+                value="0"
               />
             </label>
             <label
@@ -521,6 +518,110 @@
             >
           </div>
           <div class="table-wrap"><table id="convVsTable"></table></div>
+        </div>
+        <div
+          class="tab-panel"
+          id="panel-rent-conv"
+          role="tabpanel"
+          aria-labelledby="tab-rent-conv"
+        >
+          <h3>Conventional Mortgage Inputs</h3>
+          <div class="grid">
+            <label
+              >Conventional Mortgage Amount
+              <input
+                id="convMortgageAmount"
+                type="number"
+                min="0"
+                step="1000"
+                value="400000"
+              />
+            </label>
+            <label
+              >Conventional Interest Rate (%)
+              <input
+                id="convInitialRate"
+                type="number"
+                min="0"
+                step="0.01"
+                value="4"
+              />
+            </label>
+            <label
+              >Conventional Amortization (Months)
+              <input
+                id="convAmortMonths"
+                type="number"
+                min="1"
+                step="1"
+                value="300"
+              />
+            </label>
+          </div>
+          <h3>Conventional Rate Reset Schedule (month, annual %)</h3>
+          <textarea id="convResetSchedule" rows="4"></textarea>
+          <h3>Conventional Prepayments (month, amount)</h3>
+          <textarea id="convPrepaymentSchedule" rows="4">12,0</textarea>
+          <h3>Conventional Upfront Fees</h3>
+          <div class="grid">
+            <label
+              >Lender Fees
+              <input
+                id="convLenderFees"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+            <label
+              >Legal Fees (Closing)
+              <input
+                id="convLegalFeesClosing"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+            <label
+              >Appraisal / Inspection Fees
+              <input
+                id="convAppraisalFees"
+                type="number"
+                min="0"
+                step="50"
+                value="0"
+              />
+            </label>
+            <label
+              >Mortgage Insurance Premium
+              <input
+                id="convInsurancePremium"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+            <label
+              >Other Conventional Closing Costs
+              <input
+                id="convOtherClosingCosts"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+          </div>
+          <div class="panel-tools">
+            <label class="inline-check"
+              ><input id="showDetailRentConv" type="checkbox" /> Show detailed
+              columns</label
+            >
+          </div>
+          <div class="table-wrap"><table id="rentConvVsTable"></table></div>
         </div>
       </section>
     </main>

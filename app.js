@@ -247,7 +247,6 @@ function buildRentVsRows(model) {
     const homeInsuranceMonthly = num("homeInsuranceMonthly");
     const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
     const maintenanceMonthly = num("maintenanceMonthly");
-    const sensitivityDeltaPct = num("sensitivityDeltaPct") / 100;
 
     const termMonths = Math.max(1, Math.floor(num("termMonths")));
     const maxYears = Math.ceil(termMonths / 12);
@@ -293,8 +292,6 @@ function buildRentVsRows(model) {
 
         const propertyGrowthRateBase = num("propertyGrowthRate") / 100;
         const salePriceBase = num("purchasePrice") * Math.pow(1 + propertyGrowthRateBase, yearsUsed);
-        const salePriceLow = num("purchasePrice") * Math.pow(1 + Math.max(0, propertyGrowthRateBase - sensitivityDeltaPct), yearsUsed);
-        const salePriceHigh = num("purchasePrice") * Math.pow(1 + propertyGrowthRateBase + sensitivityDeltaPct, yearsUsed);
 
         const sellingCommissionRate = num("sellingCommissionRate") / 100;
         const hstRate = num("hstRate") / 100;
@@ -309,8 +306,6 @@ function buildRentVsRows(model) {
             return { totalSellingCosts, netBeforeSplit: price - totalSellingCosts };
         };
         const baseSale = calcNetBeforeSplit(salePriceBase);
-        const lowSale = calcNetBeforeSplit(salePriceLow);
-        const highSale = calcNetBeforeSplit(salePriceHigh);
 
         const remainingBalance = end ? end.closing : 0;
         const yourShareWaterfall = baseSale.netBeforeSplit * recognizedOwnership;
@@ -319,8 +314,7 @@ function buildRentVsRows(model) {
         const effectiveMusharakaCostWaterfallRaw = totalOutOfPocketMusharaka - yourShareWaterfall;
         const effectiveMusharakaCostWaterfall = -effectiveMusharakaCostWaterfallRaw;
         const effectiveRentCost = totalOutOfPocketRent;
-        //const unusedUpfrontCash = num("purchasePrice") * model.initialOwnership;
-        const rentCostForComparison = effectiveRentCost;// - unusedUpfrontCash;
+        const rentCostForComparison = effectiveRentCost;
         const netPositionMusharaka = yourShareWaterfall - totalOutOfPocketMusharaka;
         const netPositionRent = -rentCostForComparison;
         const netPosition = netPositionMusharaka;
@@ -328,18 +322,6 @@ function buildRentVsRows(model) {
         const roiRent = totalOutOfPocketRent > 0 ? netPositionRent / totalOutOfPocketRent : 0;
         const betterOption = effectiveMusharakaCostWaterfallRaw < rentCostForComparison ? "Musharaka" : "Rent";
         const betterBy = Math.abs(effectiveMusharakaCostWaterfallRaw - rentCostForComparison);
-
-        const rentGrowthLow = Math.max(0, annualRentGrowthRate - sensitivityDeltaPct);
-        const rentGrowthHigh = annualRentGrowthRate + sensitivityDeltaPct;
-        let rentLowTotal = 0;
-        let rentBaseTotal = 0;
-        let rentHighTotal = 0;
-        for (let m = 1; m <= horizonMonths; m += 1) {
-            const annualStep = Math.floor((m - 1) / 12);
-            rentLowTotal += monthlyRent * Math.pow(1 + rentGrowthLow, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
-            rentBaseTotal += monthlyRent * Math.pow(1 + annualRentGrowthRate, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
-            rentHighTotal += monthlyRent * Math.pow(1 + rentGrowthHigh, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
-        }
 
         return {
             horizon: `${year}Y`,
@@ -371,13 +353,7 @@ function buildRentVsRows(model) {
             yourShareWaterfall,
             cumulativeTotalPaid,
             cumulativeProfitPaid,
-            totalCashInvested: totalOutOfPocketMusharaka,
-            netSaleLow: lowSale.netBeforeSplit,
-            netSaleBase: baseSale.netBeforeSplit,
-            netSaleHigh: highSale.netBeforeSplit,
-            rentOutLow: upfrontRent + rentLowTotal,
-            rentOutBase: upfrontRent + rentBaseTotal,
-            rentOutHigh: upfrontRent + rentHighTotal
+            totalCashInvested: totalOutOfPocketMusharaka
         };
     });
 
@@ -536,6 +512,7 @@ function render() {
     const showDetailSale = document.getElementById("showDetailSale")?.checked;
     const showDetailRentVs = document.getElementById("showDetailRentVs")?.checked;
     const showDetailConvVs = document.getElementById("showDetailConvVs")?.checked;
+    const showDetailRentConv = document.getElementById("showDetailRentConv")?.checked;
     const last = model.months[model.months.length - 1];
     const kpi = document.getElementById("kpiPanel");
     const firstSale = model.saleRows[0];
@@ -748,13 +725,7 @@ function render() {
         totalSellingCosts: round2(r.totalSellingCosts),
         netSaleBeforeSplit: round2(r.netSaleBeforeSplit),
         remainingBalance: round2(r.remainingBalance),
-        netGainPayoff: round2(r.netGainPayoff),
-        netSaleLow: round2(r.netSaleLow),
-        netSaleBase: round2(r.netSaleBase),
-        netSaleHigh: round2(r.netSaleHigh),
-        rentOutLow: round2(r.rentOutLow),
-        rentOutBase: round2(r.rentOutBase),
-        rentOutHigh: round2(r.rentOutHigh)
+        netGainPayoff: round2(r.netGainPayoff)
     }));
     renderTable("rentVsTable", showDetailRentVs ? rentVsColumnsDetailed : rentVsColumnsCompact, rentVsRows);
 
@@ -818,6 +789,130 @@ function render() {
         effectiveCostConv: round2(r.effectiveCostConv)
     }));
     renderTable("convVsTable", showDetailConvVs ? convVsColumnsDetailed : convVsColumnsCompact, convVsRows);
+
+    const rentConvVsColumnsDetailed = [
+        { key: "horizon", label: "Horizon" },
+        { key: "betterOption", label: "Better Option", className: (r) => (r.betterOption === "Conventional" ? "better-rent-text" : "better-mush-text") },
+        { key: "betterBy", label: "Advantage", format: money },
+        { key: "totalOutOfPocketRent", label: "Total Cost (Rent)", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "totalOutOfPocketConv", label: "Total Cost (Conventional)", format: money, className: (r) => (r.betterOption === "Conventional" ? "better-mush-cell" : "") },
+        { key: "effectiveCostRent", label: "Effective Cost (Rent)", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "effectiveCostConv", label: "Effective Cost (Conventional)", format: money, className: (r) => (r.betterOption === "Conventional" ? "better-mush-cell" : "") },
+        { key: "roiConv", label: "ROI (Conventional)", format: pct },
+        { key: "rentMonthlyOutflow", label: "Rent Monthly Outflow", format: money },
+        { key: "monthlyOutflowConv", label: "Conv Monthly Outflow", format: money },
+        { key: "upfrontRent", label: "Upfront Rent", format: money },
+        { key: "upfrontConventional", label: "Upfront Conventional", format: money },
+        { key: "estimatedSalePrice", label: "Est. Sale Price", format: money },
+        { key: "remainingBalanceConv", label: "Remaining Balance (Conventional)", format: money },
+        { key: "convNetCashAtSale", label: "Net Cash at Sale (Conv)", format: money },
+        { key: "roiConv", label: "ROI (Conventional)", format: pct }
+    ];
+    const rentConvVsColumnsCompact = [
+        { key: "horizon", label: "Horizon" },
+        { key: "betterOption", label: "Better Option", className: (r) => (r.betterOption === "Conventional" ? "better-rent-text" : "better-mush-text") },
+        { key: "betterBy", label: "Advantage", format: money },
+        { key: "effectiveCostRent", label: "Rent Effective Cost", format: money, className: (r) => (r.betterOption === "Rent" ? "better-rent-cell" : "") },
+        { key: "effectiveCostConv", label: "Conv Effective Cost", format: money, className: (r) => (r.betterOption === "Conventional" ? "better-mush-cell" : "") },
+        { key: "roiConv", label: "ROI (Conventional)", format: pct },
+        { key: "monthlyOutflowConv", label: "Conv Monthly", format: money },
+        { key: "upfrontRent", label: "Upfront Rent", format: money },
+        { key: "upfrontConventional", label: "Conv Upfront", format: money }
+    ];
+    const rentConvVsRows = buildRentConvRows(model).map((r) => ({
+        ...r,
+        betterBy: round2(r.betterBy),
+        totalOutOfPocketRent: round2(r.totalOutOfPocketRent),
+        totalOutOfPocketConv: round2(r.totalOutOfPocketConv),
+        effectiveCostRent: round2(r.effectiveCostRent),
+        effectiveCostConv: round2(r.effectiveCostConv),
+        rentMonthlyOutflow: round2(r.rentMonthlyOutflow),
+        monthlyOutflowConv: round2(r.monthlyOutflowConv),
+        upfrontRent: round2(r.upfrontRent),
+        upfrontConventional: round2(r.upfrontConventional),
+        estimatedSalePrice: round2(r.estimatedSalePrice),
+        remainingBalanceConv: round2(r.remainingBalanceConv),
+        convNetCashAtSale: round2(r.convNetCashAtSale),
+        roiConv: r.roiConv
+    }));
+    renderTable("rentConvVsTable", showDetailRentConv ? rentConvVsColumnsDetailed : rentConvVsColumnsCompact, rentConvVsRows);
+}
+
+function buildRentConvRows(model) {
+    const convMonths = buildConventionalMonths();
+    const purchasePrice = num("purchasePrice");
+    const monthlyRent = num("monthlyRent");
+    const tenantInsuranceMonthly = num("tenantInsuranceMonthly");
+    const utilitiesMonthly = num("utilitiesMonthly");
+    const annualRentGrowthRate = num("annualRentGrowthRate") / 100;
+    const rentDeposit = num("rentDeposit");
+    const movingCosts = num("movingCosts");
+    const propertyTaxMonthly = num("propertyTaxMonthly");
+    const homeInsuranceMonthly = num("homeInsuranceMonthly");
+    const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
+    const maintenanceMonthly = num("maintenanceMonthly");
+    const propertyGrowthRate = num("propertyGrowthRate") / 100;
+    const sellingCommissionRate = num("sellingCommissionRate") / 100;
+    const hstRate = num("hstRate") / 100;
+    const legalFees = num("legalFees");
+    const dischargeFee = num("dischargeFee");
+    const otherCosts = num("otherCosts");
+    const convMortgageAmount = num("convMortgageAmount");
+    const convDownpayment = Math.max(0, purchasePrice - convMortgageAmount);
+    const convLandTransferTax = ontarioLandTransferTax(purchasePrice);
+    const convFees = num("convLenderFees") + num("convLegalFeesClosing") + num("convAppraisalFees") + num("convInsurancePremium") + num("convOtherClosingCosts");
+    const upfrontConventional = convDownpayment + convLandTransferTax + convFees;
+    const upfrontRent = rentDeposit + movingCosts;
+    const sharedMonthlyCarry = propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly;
+    const termMonths = Math.max(1, Math.floor(num("termMonths")));
+    const maxYears = Math.ceil(termMonths / 12);
+    const horizons = Array.from({ length: maxYears }, (_, i) => i + 1);
+
+    return horizons.map((year) => {
+        const horizonMonths = year * 12;
+        const rentMonthsUsed = Math.min(horizonMonths, model.months.length);
+        const convMonthsUsed = Math.min(horizonMonths, convMonths.length);
+        const convUpto = convMonths.slice(0, convMonthsUsed);
+        const convEnd = convMonths[convMonthsUsed - 1];
+        const totalRentPayments = Array.from({ length: rentMonthsUsed }, (_, idx) => {
+            const annualStep = Math.floor(idx / 12);
+            return monthlyRent * Math.pow(1 + annualRentGrowthRate, annualStep) + tenantInsuranceMonthly + utilitiesMonthly;
+        }).reduce((sum, value) => sum + value, 0);
+        const totalOutOfPocketRent = upfrontRent + totalRentPayments;
+        const convPayments = convUpto.reduce((s, r) => s + r.payment + r.principalPrepay, 0);
+        const convCarry = sharedMonthlyCarry * convMonthsUsed;
+        const totalOutOfPocketConv = upfrontConventional + convPayments + convCarry;
+        const salePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, year);
+        const sellingCommission = salePrice * sellingCommissionRate;
+        const hstCommission = sellingCommission * hstRate;
+        const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
+        const netSaleBeforeSplit = salePrice - totalSellingCosts;
+        const convNetCashAtSale = netSaleBeforeSplit - (convEnd ? convEnd.closing : 0);
+        const effectiveCostRent = totalOutOfPocketRent;
+        const effectiveCostConv = convNetCashAtSale - totalOutOfPocketConv;
+        const netPositionConv = convNetCashAtSale - totalOutOfPocketConv;
+        const roiConv = totalOutOfPocketConv > 0 ? netPositionConv / totalOutOfPocketConv : 0;
+        const betterOption = (-effectiveCostRent) > effectiveCostConv ? "Rent" : "Conventional";
+        const betterBy = Math.abs((-effectiveCostRent) - effectiveCostConv);
+
+        return {
+            horizon: `${year}Y`,
+            betterOption,
+            betterBy,
+            totalOutOfPocketRent,
+            totalOutOfPocketConv,
+            effectiveCostRent,
+            effectiveCostConv,
+            roiConv,
+            rentMonthlyOutflow: monthlyRent * Math.pow(1 + annualRentGrowthRate, 0) + tenantInsuranceMonthly + utilitiesMonthly,
+            monthlyOutflowConv: (convMonths[0]?.payment || 0) + sharedMonthlyCarry,
+            upfrontRent,
+            upfrontConventional,
+            estimatedSalePrice: salePrice,
+            remainingBalanceConv: convEnd ? convEnd.closing : 0,
+            convNetCashAtSale
+        };
+    });
 }
 
 function setupTabs() {
@@ -844,6 +939,7 @@ document.getElementById("showDetailAnnual")?.addEventListener("change", render);
 document.getElementById("showDetailSale")?.addEventListener("change", render);
 document.getElementById("showDetailRentVs")?.addEventListener("change", render);
 document.getElementById("showDetailConvVs")?.addEventListener("change", render);
+document.getElementById("showDetailRentConv")?.addEventListener("change", render);
 [
     "monthlyRent",
     "tenantInsuranceMonthly",
@@ -855,7 +951,6 @@ document.getElementById("showDetailConvVs")?.addEventListener("change", render);
     "homeInsuranceMonthly",
     "musharakaUtilitiesMonthly",
     "maintenanceMonthly",
-    "sensitivityDeltaPct",
     "convMortgageAmount",
     "convInitialRate",
     "convAmortMonths",
