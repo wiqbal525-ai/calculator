@@ -319,8 +319,8 @@ function buildRentVsRows(model) {
         const effectiveMusharakaCostWaterfallRaw = totalOutOfPocketMusharaka - yourShareWaterfall;
         const effectiveMusharakaCostWaterfall = -effectiveMusharakaCostWaterfallRaw;
         const effectiveRentCost = totalOutOfPocketRent;
-        const unusedUpfrontCash = num("purchasePrice") * model.initialOwnership;
-        const rentCostForComparison = effectiveRentCost - unusedUpfrontCash;
+        //const unusedUpfrontCash = num("purchasePrice") * model.initialOwnership;
+        const rentCostForComparison = effectiveRentCost;// - unusedUpfrontCash;
         const netPositionMusharaka = yourShareWaterfall - totalOutOfPocketMusharaka;
         const netPositionRent = -rentCostForComparison;
         const netPosition = netPositionMusharaka;
