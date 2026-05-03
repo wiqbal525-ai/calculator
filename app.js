@@ -203,8 +203,11 @@ function buildModel() {
         const hstCommission = sellingCommission * hstRate;
         const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
         const netBeforeSplit = estimatedSalePrice - totalSellingCosts;
-        const yourShare = netBeforeSplit * end.recognized;
-        const manzilShare = netBeforeSplit * (1 - end.recognized);
+        // Manzil distribution: remainingBalance is manzilOwnership * purchasePrice
+        const manzilOwnership = 1 - end.recognized;
+        const remainingBalance = manzilOwnership * purchasePrice;
+        const manzilShare = remainingBalance;
+        const yourShare = estimatedSalePrice - manzilShare - totalSellingCosts;
 
         const upto = months.slice(0, saleMonth);
         const cumulativePayment = upto.reduce((s, r) => s + r.payment, 0);
@@ -212,12 +215,12 @@ function buildModel() {
         const cumulativeTotalPaid = cumulativePayment + cumulativePrepay;
         const cumulativeProfitPaid = upto.reduce((s, r) => s + r.profit, 0);
         const cumulativePrincipalPaid = upto.reduce((s, r) => s + r.totalEquity, 0);
-        const totalCashInvested = purchasePrice * initialOwnership + totalClosingCosts + cumulativeTotalPaid;
+        const totalCashInvested = purchasePrice * initialOwnership + totalClosingCosts + cumulativePrincipalPaid;
         const netGainWaterfall = yourShare - totalCashInvested;
         const roiWaterfall = totalCashInvested > 0 ? netGainWaterfall / totalCashInvested : 0;
-
-        const remainingBalance = end.closing;
-        const netCashPayoff = netBeforeSplit - remainingBalance;
+        // Traditional payoff calculation using actual mortgage balance
+        const actualRemainingBalance = end.closing;
+        const netCashPayoff = netBeforeSplit - actualRemainingBalance;
         const netGainPayoff = netCashPayoff - totalCashInvested;
         const roiPayoff = totalCashInvested > 0 ? netGainPayoff / totalCashInvested : 0;
 
@@ -494,6 +497,62 @@ function buildConvVsRows(model) {
     });
 }
 
+function buildConvSaleRows(model) {
+    const purchasePrice = num("purchasePrice");
+    const termMonths = Math.max(1, Math.floor(num("termMonths")));
+    const propertyGrowthRate = num("propertyGrowthRate") / 100;
+    const sellingCommissionRate = num("sellingCommissionRate") / 100;
+    const hstRate = num("hstRate") / 100;
+    const legalFees = num("legalFees");
+    const dischargeFee = num("dischargeFee");
+    const otherCosts = num("otherCosts");
+    const convMonths = buildConventionalMonths();
+    const convMortgageAmount = num("convMortgageAmount");
+    const convDownpayment = Math.max(0, purchasePrice - convMortgageAmount);
+    const convLandTransferTax = ontarioLandTransferTax(purchasePrice);
+    const convFees = num("convLenderFees") + num("convLegalFeesClosing") + num("convAppraisalFees") + num("convInsurancePremium") + num("convOtherClosingCosts");
+    const upfrontConventional = convDownpayment + convLandTransferTax + convFees;
+
+    const maxYears = Math.ceil(termMonths / 12);
+    const horizons = Array.from({ length: maxYears }, (_, i) => i + 1);
+
+    return horizons.map((year) => {
+        const horizonMonths = year * 12;
+        const convMonthsUsed = Math.min(horizonMonths, convMonths.length);
+        const convUpto = convMonths.slice(0, convMonthsUsed);
+        const convEnd = convMonths[Math.min(horizonMonths, convMonths.length) - 1] || { closing: 0 };
+        const salePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, year);
+        const sellingCommission = salePrice * sellingCommissionRate;
+        const hstCommission = sellingCommission * hstRate;
+        const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
+        const netSaleBeforeSplit = salePrice - totalSellingCosts;
+        const remainingBalance = convEnd.closing;
+        const netCashAtSale = netSaleBeforeSplit - remainingBalance;
+        const cumulativeTotalPaid = convUpto.reduce((s, r) => s + r.payment + r.principalPrepay, 0);
+        const cumulativeProfitPaid = convUpto.reduce((s, r) => s + r.interest, 0);
+        const cashInvested = upfrontConventional + cumulativeTotalPaid;
+        const netGainPayoff = netCashAtSale - cashInvested;
+        const equityShare = purchasePrice > 0 ? Math.min(1, 1 - remainingBalance / purchasePrice) : 0;
+        const roiConv = cashInvested > 0 ? netGainPayoff / cashInvested : 0;
+
+        return {
+            horizon: `${year}Y`,
+            salePrice,
+            totalSellingCosts,
+            netSaleBeforeSplit,
+            remainingBalance,
+            netCashAtSale,
+            upfrontConventional,
+            cumulativeTotalPaid,
+            cumulativeProfitPaid,
+            cashInvested,
+            netGainPayoff,
+            equityShare,
+            roiConv
+        };
+    });
+}
+
 function renderTable(id, columns, rows) {
     const table = document.getElementById(id);
     const thead = `<thead><tr>${columns.map((c) => `<th>${c.label}</th>`).join("")}</tr></thead>`;
@@ -648,6 +707,7 @@ function render() {
         { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
         { key: "totalCashInvested", label: "Cash Invested", format: money },
         { key: "netGainWaterfall", label: "Net Gain (Waterfall)", format: money },
+        { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money },
         { key: "roiWaterfall", label: "ROI (Waterfall)", format: pct }
     ];
     renderTable("saleTable", showDetailSale ? saleColumnsDetailed : saleColumnsCompact, model.saleRows.map((r) => ({
@@ -789,6 +849,38 @@ function render() {
         effectiveCostConv: round2(r.effectiveCostConv)
     }));
     renderTable("convVsTable", showDetailConvVs ? convVsColumnsDetailed : convVsColumnsCompact, convVsRows);
+
+    const convSaleColumns = [
+        { key: "horizon", label: "Horizon" },
+        { key: "salePrice", label: "Estimated Sale Price", format: money },
+        { key: "totalSellingCosts", label: "Selling Costs", format: money },
+        { key: "netSaleBeforeSplit", label: "Net Sale Before Split", format: money },
+        { key: "remainingBalance", label: "Remaining Balance", format: money },
+        { key: "netCashAtSale", label: "Net Cash at Sale", format: money },
+        { key: "upfrontConventional", label: "Upfront Cash (Conventional)", format: money },
+        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
+        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
+        { key: "cashInvested", label: "Cash Invested", format: money },
+        { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money },
+        { key: "roiConv", label: "ROI (Payoff)", format: pct },
+        { key: "equityShare", label: "Equity Share %", format: pct }
+    ];
+    const convSaleRows = buildConvSaleRows(model).map((r) => ({
+        ...r,
+        salePrice: round2(r.salePrice),
+        totalSellingCosts: round2(r.totalSellingCosts),
+        netSaleBeforeSplit: round2(r.netSaleBeforeSplit),
+        remainingBalance: round2(r.remainingBalance),
+        netCashAtSale: round2(r.netCashAtSale),
+        upfrontConventional: round2(r.upfrontConventional),
+        cumulativeTotalPaid: round2(r.cumulativeTotalPaid),
+        cumulativeProfitPaid: round2(r.cumulativeProfitPaid),
+        cashInvested: round2(r.cashInvested),
+        netGainPayoff: round2(r.netGainPayoff),
+        roiConv: r.roiConv,
+        equityShare: r.equityShare
+    }));
+    renderTable("convSaleTable", convSaleColumns, convSaleRows);
 
     const rentConvVsColumnsDetailed = [
         { key: "horizon", label: "Horizon" },
