@@ -215,7 +215,7 @@ function buildModel() {
         const cumulativeTotalPaid = cumulativePayment + cumulativePrepay;
         const cumulativeProfitPaid = upto.reduce((s, r) => s + r.profit, 0);
         const cumulativePrincipalPaid = upto.reduce((s, r) => s + r.totalEquity, 0);
-        const totalCashInvested = purchasePrice * initialOwnership + totalClosingCosts + cumulativePrincipalPaid;
+        const totalCashInvested = purchasePrice * initialOwnership + totalClosingCosts + cumulativeTotalPaid;
         const netGainWaterfall = yourShare - totalCashInvested;
         const roiWaterfall = totalCashInvested > 0 ? netGainWaterfall / totalCashInvested : 0;
         // Traditional payoff calculation using actual mortgage balance
@@ -417,7 +417,9 @@ function buildConvVsRows(model) {
     const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
     const maintenanceMonthly = num("maintenanceMonthly");
     const sharedMonthlyCarry = propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly;
-    const horizons = [1, 3, 5, 10];
+    const termMonths = Math.max(1, Math.floor(num("termMonths")));
+    const maxYears = Math.ceil(termMonths / 12);
+    const horizons = Array.from({ length: maxYears }, (_, i) => i + 1);
 
     const convMortgageAmount = num("convMortgageAmount");
     const convDownpayment = Math.max(0, purchasePrice - convMortgageAmount);
@@ -452,14 +454,18 @@ function buildConvVsRows(model) {
         const totalOutOfPocketMush = upfrontMusharaka + mushPayments + mushCarry;
         const totalOutOfPocketConv = upfrontConventional + convPayments + convCarry;
 
-        const salePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, yearsUsed);
+        const salePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, year);
         const sellingCommission = salePrice * sellingCommissionRate;
         const hstCommission = sellingCommission * hstRate;
         const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
         const netSaleBeforeSplit = salePrice - totalSellingCosts;
 
         const mushRecognized = mushEnd ? mushEnd.recognized : model.initialOwnership;
-        const mushYourShareWaterfall = netSaleBeforeSplit * mushRecognized;
+        // Manzil distribution for Musharaka
+        const manzilOwnership = 1 - mushRecognized;
+        const remainingBalanceMush = manzilOwnership * purchasePrice;
+        const manzilShare = remainingBalanceMush;
+        const mushYourShareWaterfall = salePrice - manzilShare - totalSellingCosts;
         const convNetCashAtSale = netSaleBeforeSplit - (convEnd ? convEnd.closing : 0);
 
         const effectiveCostMush = totalOutOfPocketMush - mushYourShareWaterfall;
@@ -475,7 +481,7 @@ function buildConvVsRows(model) {
             monthlyOutflowConv: (convMonths[0]?.payment || 0) + sharedMonthlyCarry,
             upfrontMusharaka,
             upfrontConventional,
-            annualPrincipalMush: mushPrincipal / Math.max(1, yearsUsed),
+            annualPrincipalMush: mushPrincipal / Math.max(1, year),
             annualPrincipalConv: convPrincipal / Math.max(1, yearsUsed),
             annualShareTransferMush,
             annualShareTransferConv,
@@ -488,7 +494,7 @@ function buildConvVsRows(model) {
             estimatedSalePrice: salePrice,
             totalSellingCosts,
             netSaleBeforeSplit,
-            remainingBalanceMush: mushEnd ? mushEnd.closing : 0,
+            remainingBalanceMush: remainingBalanceMush,
             remainingBalanceConv: convEnd ? convEnd.closing : 0,
             netCashAtSaleConv: convNetCashAtSale,
             effectiveCostMush,
@@ -680,11 +686,11 @@ function render() {
         { key: "ownershipEnd", label: "Ownership %", format: pct },
         { key: "annualEquityRegular", label: "Annual Equity (Regular)", format: money },
         { key: "annualEquityPrepay", label: "Annual Equity (Prepay)", format: money },
-        { key: "annualTotalEquity", label: "Total Equity", format: money },
         { key: "yourShare", label: "Your Share (Waterfall)", format: money },
-        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
-        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
         { key: "totalCashInvested", label: "Total Cash Invested", format: money },
+        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
+        { key: "annualTotalEquity", label: "Total Equity", format: money },
+        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
         { key: "netGainWaterfall", label: "Net Gain/Loss (Waterfall)", format: money },
         { key: "recognizedEnd", label: "Recognized Ownership %", format: pct },
         { key: "annualRecognizedTransfer", label: "Annual Recognized Transfer %", format: pct },
@@ -697,15 +703,15 @@ function render() {
     const saleColumnsCompact = [
         { key: "year", label: "Year" },
         { key: "saleMonth", label: "Sale Month" },
-        { key: "annualTotalEquity", label: "Total Equity", format: money },
         { key: "annualShareTransfer", label: "Share Transfer %", format: pct },
         { key: "estimatedSalePrice", label: "Est. Sale Price", format: money },
         { key: "totalSellingCosts", label: "Selling Costs", format: money },
         { key: "ownershipEnd", label: "Ownership %", format: pct },
         { key: "yourShare", label: "Your Share", format: money },
-        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
-        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
         { key: "totalCashInvested", label: "Cash Invested", format: money },
+        { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
+        { key: "annualTotalEquity", label: "Total Equity", format: money },
+        { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
         { key: "netGainWaterfall", label: "Net Gain (Waterfall)", format: money },
         { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money },
         { key: "roiWaterfall", label: "ROI (Waterfall)", format: pct }
