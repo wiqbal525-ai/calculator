@@ -87,6 +87,31 @@ thead th {
 .better-mush-cell { background: #e9f8ef; font-weight: 600; }
 .better-rent-text { color: #9a5a00; font-weight: 700; }
 .better-mush-text { color: #1f7a3e; font-weight: 700; }
+.comparison-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin: 0 0 10px;
+}
+.summary-card {
+  border: 1px solid #dde3ea;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fbfcfe;
+}
+.summary-card .label {
+  color: #596979;
+  font-size: 0.82rem;
+}
+.summary-card .value {
+  font-weight: 700;
+  margin-top: 6px;
+}
+.summary-card .note {
+  color: #596979;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
 #rentVsTable { min-width: 0; font-size: 0.8rem; }
 #rentVsTable th, #rentVsTable td { white-space: normal; }
 #convVsTable { min-width: 0; font-size: 0.78rem; table-layout: fixed; }

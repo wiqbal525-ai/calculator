@@ -251,18 +251,15 @@ function buildRentVsRows(model) {
     const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
     const maintenanceMonthly = num("maintenanceMonthly");
 
-    const termMonths = Math.max(1, Math.floor(num("termMonths")));
-    const maxYears = Math.ceil(termMonths / 12);
-    const horizons = Array.from({ length: maxYears }, (_, i) => i + 1);
     const initialOwnershipCash = num("purchasePrice") * model.initialOwnership;
     const firstSale = model.saleRows[0];
     const totalClosingCosts = firstSale ? firstSale.totalClosingCosts : 0;
     const upfrontMusharaka = initialOwnershipCash + totalClosingCosts;
     const upfrontRent = rentDeposit + movingCosts;
 
-    const rows = horizons.map((year) => {
-        const horizonMonths = Math.min(year * 12, model.months.length);
-        const yearsUsed = horizonMonths / 12;
+    const rows = model.saleRows.map((saleRow) => {
+        const year = saleRow.year;
+        const horizonMonths = saleRow.saleMonth;
         const yearStartMonth = Math.max(1, (year - 1) * 12 + 1);
         const yearStartRow = model.months[yearStartMonth - 1] || model.months[model.months.length - 1];
         const musharakaMonthlyOutflow = (yearStartRow?.payment || 0) + propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly;
@@ -291,28 +288,11 @@ function buildRentVsRows(model) {
         const totalMushCarryCosts = (propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly) * horizonMonths;
 
         const totalOutOfPocketRent = upfrontRent + totalRentPayments;
-        const totalOutOfPocketMusharaka = upfrontMusharaka + cumulativeTotalPaid + totalMushCarryCosts;
+        const totalOutOfPocketMusharaka = saleRow.totalCashInvested + totalMushCarryCosts;
 
-        const propertyGrowthRateBase = num("propertyGrowthRate") / 100;
-        const salePriceBase = num("purchasePrice") * Math.pow(1 + propertyGrowthRateBase, yearsUsed);
-
-        const sellingCommissionRate = num("sellingCommissionRate") / 100;
-        const hstRate = num("hstRate") / 100;
-        const legalFees = num("legalFees");
-        const dischargeFee = num("dischargeFee");
-        const otherCosts = num("otherCosts");
-
-        const calcNetBeforeSplit = (price) => {
-            const sellingCommission = price * sellingCommissionRate;
-            const hstCommission = sellingCommission * hstRate;
-            const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
-            return { totalSellingCosts, netBeforeSplit: price - totalSellingCosts };
-        };
-        const baseSale = calcNetBeforeSplit(salePriceBase);
-
-        const remainingBalance = end ? end.closing : 0;
-        const yourShareWaterfall = baseSale.netBeforeSplit * recognizedOwnership;
-        const netCashPayoff = baseSale.netBeforeSplit - remainingBalance;
+        const remainingBalance = saleRow.remainingBalance;
+        const yourShareWaterfall = saleRow.yourShare;
+        const netCashPayoff = saleRow.netCashPayoff;
         const netGainPayoff = netCashPayoff - totalOutOfPocketMusharaka;
         const effectiveMusharakaCostWaterfallRaw = totalOutOfPocketMusharaka - yourShareWaterfall;
         const effectiveMusharakaCostWaterfall = -effectiveMusharakaCostWaterfallRaw;
@@ -348,9 +328,9 @@ function buildRentVsRows(model) {
             roiRent,
             betterOption,
             betterBy,
-            estimatedSalePrice: salePriceBase,
-            totalSellingCosts: baseSale.totalSellingCosts,
-            netSaleBeforeSplit: baseSale.netBeforeSplit,
+            estimatedSalePrice: saleRow.estimatedSalePrice,
+            totalSellingCosts: saleRow.totalSellingCosts,
+            netSaleBeforeSplit: saleRow.netBeforeSplit,
             remainingBalance,
             netGainPayoff,
             yourShareWaterfall,
@@ -568,6 +548,53 @@ function renderTable(id, columns, rows) {
         return `<td class="${cls}">${value ?? ""}</td>`;
     }).join("")}</tr>`).join("");
     table.innerHTML = `${thead}<tbody>${body}</tbody>`;
+}
+
+function renderRentVsSummary(rows) {
+    const summary = document.getElementById("rentVsSummary");
+    if (!summary) return;
+    if (!rows.length) {
+        summary.innerHTML = "";
+        return;
+    }
+
+    const fiveYearRow = rows.find((r) => r.horizon === "5Y") || rows[Math.min(rows.length - 1, 4)];
+    const breakevenRow = rows.find((r) => r.betterOption === "Musharaka");
+    const firstRow = rows[0];
+    const winnerClass = fiveYearRow.betterOption === "Musharaka" ? "better-mush-text" : "better-rent-text";
+
+    summary.innerHTML = `
+    <div class="summary-card">
+      <div class="label">5-Year Better Option</div>
+      <div class="value ${winnerClass}">${fiveYearRow.betterOption}</div>
+      <div class="note">${money(fiveYearRow.betterBy)} advantage</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">5-Year Effective Cost</div>
+      <div class="value">${money(fiveYearRow.effectiveMusharakaCostWaterfall)}</div>
+      <div class="note">Musharaka waterfall position</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">5-Year Rent Cost</div>
+      <div class="value">${money(fiveYearRow.effectiveRentCost)}</div>
+      <div class="note">Rent, insurance, utilities, upfront costs</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Musharaka Wins From</div>
+      <div class="value">${breakevenRow ? breakevenRow.horizon : "Not within term"}</div>
+      <div class="note">Year 1 starts with ${firstRow.betterOption}</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">Monthly Outflow Gap</div>
+      <div class="value">${money(fiveYearRow.musharakaMonthlyOutflow - fiveYearRow.rentMonthlyOutflow)}</div>
+      <div class="note">Musharaka minus rent at the selected year</div>
+    </div>
+    <div class="summary-card">
+      <div class="label">5-Year Ownership</div>
+      <div class="value">${pct(fiveYearRow.recognizedOwnership)}</div>
+      <div class="note">Recognized Musharaka ownership</div>
+    </div>
+  `;
 }
 
 function render() {
@@ -793,6 +820,7 @@ function render() {
         remainingBalance: round2(r.remainingBalance),
         netGainPayoff: round2(r.netGainPayoff)
     }));
+    renderRentVsSummary(rentVsRows);
     renderTable("rentVsTable", showDetailRentVs ? rentVsColumnsDetailed : rentVsColumnsCompact, rentVsRows);
 
     const convVsColumnsDetailed = [

@@ -172,69 +172,6 @@
 
       <section class="panel">
         <h2>Schedules & Summaries</h2>
-        <h3>Rent Inputs</h3>
-        <div class="grid">
-          <label
-            >Monthly Rent
-            <input
-              id="monthlyRent"
-              type="number"
-              min="0"
-              step="50"
-              value="2500"
-            />
-          </label>
-          <label
-            >Tenant Insurance (Monthly)
-            <input
-              id="tenantInsuranceMonthly"
-              type="number"
-              min="0"
-              step="10"
-              value="0"
-            />
-          </label>
-          <label
-            >Utilities (Monthly)
-            <input
-              id="utilitiesMonthly"
-              type="number"
-              min="0"
-              step="10"
-              value="0"
-            />
-          </label>
-          <label
-            >Annual Rent Growth (%)
-            <input
-              id="annualRentGrowthRate"
-              type="number"
-              min="0"
-              step="0.1"
-              value="2.5"
-            />
-          </label>
-          <label
-            >Rent Deposit
-            <input
-              id="rentDeposit"
-              type="number"
-              min="0"
-              step="100"
-              value="0"
-            />
-          </label>
-          <label
-            >Moving Costs
-            <input
-              id="movingCosts"
-              type="number"
-              min="0"
-              step="100"
-              value="0"
-            />
-          </label>
-        </div>
         <h3>Conventional Mortgage Inputs</h3>
         <div class="grid">
           <label
@@ -464,6 +401,69 @@
           role="tabpanel"
           aria-labelledby="tab-rent-vs"
         >
+          <h3>Rent Inputs</h3>
+          <div class="grid">
+            <label
+              >Monthly Rent
+              <input
+                id="monthlyRent"
+                type="number"
+                min="0"
+                step="50"
+                value="2500"
+              />
+            </label>
+            <label
+              >Tenant Insurance (Monthly)
+              <input
+                id="tenantInsuranceMonthly"
+                type="number"
+                min="0"
+                step="10"
+                value="0"
+              />
+            </label>
+            <label
+              >Utilities (Monthly)
+              <input
+                id="utilitiesMonthly"
+                type="number"
+                min="0"
+                step="10"
+                value="0"
+              />
+            </label>
+            <label
+              >Annual Rent Growth (%)
+              <input
+                id="annualRentGrowthRate"
+                type="number"
+                min="0"
+                step="0.1"
+                value="2.5"
+              />
+            </label>
+            <label
+              >Rent Deposit
+              <input
+                id="rentDeposit"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+            <label
+              >Moving Costs
+              <input
+                id="movingCosts"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+          </div>
           <h3>Musharaka Monthly Carry Costs</h3>
           <div class="grid">
             <label
@@ -513,6 +513,7 @@
               columns</label
             >
           </div>
+          <div class="comparison-summary" id="rentVsSummary"></div>
           <div class="table-wrap"><table id="rentVsTable"></table></div>
         </div>
         <div
