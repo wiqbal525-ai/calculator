@@ -386,20 +386,11 @@ function buildConventionalMonths() {
 function buildConvVsRows(model) {
     const convMonths = buildConventionalMonths();
     const purchasePrice = num("purchasePrice");
-    const propertyGrowthRate = num("propertyGrowthRate") / 100;
-    const sellingCommissionRate = num("sellingCommissionRate") / 100;
-    const hstRate = num("hstRate") / 100;
-    const legalFees = num("legalFees");
-    const dischargeFee = num("dischargeFee");
-    const otherCosts = num("otherCosts");
     const propertyTaxMonthly = num("propertyTaxMonthly");
     const homeInsuranceMonthly = num("homeInsuranceMonthly");
     const musharakaUtilitiesMonthly = num("musharakaUtilitiesMonthly");
     const maintenanceMonthly = num("maintenanceMonthly");
     const sharedMonthlyCarry = propertyTaxMonthly + homeInsuranceMonthly + musharakaUtilitiesMonthly + maintenanceMonthly;
-    const termMonths = Math.max(1, Math.floor(num("termMonths")));
-    const maxYears = Math.ceil(termMonths / 12);
-    const horizons = Array.from({ length: maxYears }, (_, i) => i + 1);
 
     const convMortgageAmount = num("convMortgageAmount");
     const convDownpayment = Math.max(0, purchasePrice - convMortgageAmount);
@@ -411,9 +402,10 @@ function buildConvVsRows(model) {
     const mushClosingCosts = model.saleRows[0] ? model.saleRows[0].totalClosingCosts : 0;
     const upfrontMusharaka = mushInitialEquity + mushClosingCosts;
 
-    return horizons.map((year) => {
-        const horizonMonths = year * 12;
-        const mushMonthsUsed = Math.min(horizonMonths, model.months.length);
+    return model.saleRows.map((saleRow) => {
+        const year = saleRow.year;
+        const horizonMonths = saleRow.saleMonth;
+        const mushMonthsUsed = saleRow.saleMonth;
         const convMonthsUsed = Math.min(horizonMonths, convMonths.length);
         const mushUpto = model.months.slice(0, mushMonthsUsed);
         const convUpto = convMonths.slice(0, convMonthsUsed);
@@ -434,24 +426,20 @@ function buildConvVsRows(model) {
         const totalOutOfPocketMush = upfrontMusharaka + mushPayments + mushCarry;
         const totalOutOfPocketConv = upfrontConventional + convPayments + convCarry;
 
-        const salePrice = purchasePrice * Math.pow(1 + propertyGrowthRate, year);
-        const sellingCommission = salePrice * sellingCommissionRate;
-        const hstCommission = sellingCommission * hstRate;
-        const totalSellingCosts = sellingCommission + hstCommission + legalFees + dischargeFee + otherCosts;
-        const netSaleBeforeSplit = salePrice - totalSellingCosts;
+        const totalSellingCosts = saleRow.totalSellingCosts;
+        const netSaleBeforeSplit = saleRow.netBeforeSplit;
 
         const mushRecognized = mushEnd ? mushEnd.recognized : model.initialOwnership;
-        // Manzil distribution for Musharaka
-        const manzilOwnership = 1 - mushRecognized;
-        const remainingBalanceMush = manzilOwnership * purchasePrice;
-        const manzilShare = remainingBalanceMush;
-        const mushYourShareWaterfall = salePrice - manzilShare - totalSellingCosts;
+        const remainingBalanceMush = saleRow.remainingBalance;
+        const mushYourShareWaterfall = saleRow.yourShare;
         const convNetCashAtSale = netSaleBeforeSplit - (convEnd ? convEnd.closing : 0);
 
-        const effectiveCostMush = totalOutOfPocketMush - mushYourShareWaterfall;
-        const effectiveCostConv = totalOutOfPocketConv - convNetCashAtSale;
-        const betterOption = effectiveCostMush < effectiveCostConv ? "Musharaka" : "Conventional";
-        const betterBy = Math.abs(effectiveCostMush - effectiveCostConv);
+        const effectiveCostMushRaw = totalOutOfPocketMush - mushYourShareWaterfall;
+        const effectiveCostConvRaw = totalOutOfPocketConv - convNetCashAtSale;
+        const effectiveCostMush = -effectiveCostMushRaw;
+        const effectiveCostConv = -effectiveCostConvRaw;
+        const betterOption = effectiveCostMushRaw < effectiveCostConvRaw ? "Musharaka" : "Conventional";
+        const betterBy = Math.abs(effectiveCostMushRaw - effectiveCostConvRaw);
 
         return {
             horizon: `${year}Y`,
@@ -471,7 +459,7 @@ function buildConvVsRows(model) {
             equityShareConv: convEnd ? convEnd.equityShare : 0,
             totalOutOfPocketMush,
             totalOutOfPocketConv,
-            estimatedSalePrice: salePrice,
+            estimatedSalePrice: saleRow.estimatedSalePrice,
             totalSellingCosts,
             netSaleBeforeSplit,
             remainingBalanceMush: remainingBalanceMush,
