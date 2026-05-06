@@ -721,15 +721,16 @@ function render() {
         { key: "annualShareTransfer", label: "Share Transfer %", format: pct },
         { key: "estimatedSalePrice", label: "Est. Sale Price", format: money },
         { key: "totalSellingCosts", label: "Selling Costs", format: money },
+        { key: "netGainWaterfall", label: "Net Gain (Waterfall)", format: money },
+        { key: "roiWaterfall", label: "ROI (Waterfall)", format: pct },
         { key: "ownershipEnd", label: "Ownership %", format: pct },
         { key: "yourShare", label: "Your Share", format: money },
         { key: "totalCashInvested", label: "Cash Invested", format: money },
         { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
         { key: "annualTotalEquity", label: "Total Equity", format: money },
         { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
-        { key: "netGainWaterfall", label: "Net Gain (Waterfall)", format: money },
-        { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money },
-        { key: "roiWaterfall", label: "ROI (Waterfall)", format: pct }
+        { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money }
+
     ];
     renderTable("saleTable", showDetailSale ? saleColumnsDetailed : saleColumnsCompact, model.saleRows.map((r) => ({
         ...r,
@@ -876,6 +877,8 @@ function render() {
         { key: "horizon", label: "Horizon" },
         { key: "salePrice", label: "Estimated Sale Price", format: money },
         { key: "totalSellingCosts", label: "Selling Costs", format: money },
+        { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money },
+        { key: "roiConv", label: "ROI (Payoff)", format: pct },
         { key: "netSaleBeforeSplit", label: "Net Sale Before Split", format: money },
         { key: "remainingBalance", label: "Remaining Balance", format: money },
         { key: "netCashAtSale", label: "Net Cash at Sale", format: money },
@@ -883,8 +886,6 @@ function render() {
         { key: "cumulativeTotalPaid", label: "Cumulative Total Paid", format: money },
         { key: "cumulativeProfitPaid", label: "Cumulative Profit Paid", format: money },
         { key: "cashInvested", label: "Cash Invested", format: money },
-        { key: "netGainPayoff", label: "Net Gain (Payoff)", format: money },
-        { key: "roiConv", label: "ROI (Payoff)", format: pct },
         { key: "equityShare", label: "Equity Share %", format: pct }
     ];
     const convSaleRows = buildConvSaleRows(model).map((r) => ({
@@ -1032,6 +1033,20 @@ function buildRentConvRows(model) {
 function setupTabs() {
     const buttons = Array.from(document.querySelectorAll(".tab-btn"));
     const panels = Array.from(document.querySelectorAll(".tab-panel"));
+    const conventionalInputs = document.getElementById("conventionalInputs");
+    const tabsWithoutConventionalInputs = new Set([
+        "panel-monthly",
+        "panel-quarterly",
+        "panel-annual",
+        "panel-sale",
+        "panel-rent-vs"
+    ]);
+
+    function updateConventionalInputs(target) {
+        if (!conventionalInputs) return;
+        conventionalInputs.hidden = tabsWithoutConventionalInputs.has(target);
+    }
+
     for (const btn of buttons) {
         btn.addEventListener("click", () => {
             const target = btn.dataset.target;
@@ -1042,8 +1057,12 @@ function setupTabs() {
             for (const panel of panels) {
                 panel.classList.toggle("active", panel.id === target);
             }
+            updateConventionalInputs(target);
         });
     }
+
+    const activeButton = buttons.find((btn) => btn.classList.contains("active"));
+    updateConventionalInputs(activeButton?.dataset.target || "panel-monthly");
 }
 
 document.getElementById("runBtn").addEventListener("click", render);

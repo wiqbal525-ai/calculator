@@ -154,14 +154,11 @@
           One per line. Month 1 will be auto-added from Initial Profit Rate if
           omitted.
         </p>
-        <textarea id="resetSchedule" rows="5">
-1,5.9
-25,5.9</textarea
-        >
+        <textarea id="resetSchedule" rows="5"></textarea>
 
         <h2>Prepayments (month, amount)</h2>
         <p class="subtle">Optional. Add one entry per line.</p>
-        <textarea id="prepaymentSchedule" rows="5">12,0</textarea>
+        <textarea id="prepaymentSchedule" rows="5"></textarea>
 
         <div class="actions">
           <button id="runBtn" type="button">Run Model</button>
@@ -172,95 +169,97 @@
 
       <section class="panel">
         <h2>Schedules & Summaries</h2>
-        <h3>Conventional Mortgage Inputs</h3>
-        <div class="grid">
-          <label
-            >Conventional Mortgage Amount
-            <input
-              id="convMortgageAmount"
-              type="number"
-              min="0"
-              step="1000"
-              value="400000"
-            />
-          </label>
-          <label
-            >Conventional Interest Rate (%)
-            <input
-              id="convInitialRate"
-              type="number"
-              min="0"
-              step="0.01"
-              value="4"
-            />
-          </label>
-          <label
-            >Conventional Amortization (Months)
-            <input
-              id="convAmortMonths"
-              type="number"
-              min="1"
-              step="1"
-              value="300"
-            />
-          </label>
-        </div>
-        <h3>Conventional Rate Reset Schedule (month, annual %)</h3>
-        <textarea id="convResetSchedule" rows="4"></textarea>
-        <h3>Conventional Prepayments (month, amount)</h3>
-        <textarea id="convPrepaymentSchedule" rows="4">12,0</textarea>
-        <h3>Conventional Upfront Fees</h3>
-        <div class="grid">
-          <label
-            >Lender Fees
-            <input
-              id="convLenderFees"
-              type="number"
-              min="0"
-              step="100"
-              value="0"
-            />
-          </label>
-          <label
-            >Legal Fees (Closing)
-            <input
-              id="convLegalFeesClosing"
-              type="number"
-              min="0"
-              step="100"
-              value="5000"
-            />
-          </label>
-          <label
-            >Appraisal / Inspection Fees
-            <input
-              id="convAppraisalFees"
-              type="number"
-              min="0"
-              step="50"
-              value="550"
-            />
-          </label>
-          <label
-            >Mortgage Insurance Premium
-            <input
-              id="convInsurancePremium"
-              type="number"
-              min="0"
-              step="100"
-              value="0"
-            />
-          </label>
-          <label
-            >Other Conventional Closing Costs
-            <input
-              id="convOtherClosingCosts"
-              type="number"
-              min="0"
-              step="100"
-              value="0"
-            />
-          </label>
+        <div id="conventionalInputs">
+          <h3>Conventional Mortgage Inputs</h3>
+          <div class="grid">
+            <label
+              >Conventional Mortgage Amount
+              <input
+                id="convMortgageAmount"
+                type="number"
+                min="0"
+                step="1000"
+                value="400000"
+              />
+            </label>
+            <label
+              >Conventional Interest Rate (%)
+              <input
+                id="convInitialRate"
+                type="number"
+                min="0"
+                step="0.01"
+                value="4"
+              />
+            </label>
+            <label
+              >Conventional Amortization (Months)
+              <input
+                id="convAmortMonths"
+                type="number"
+                min="1"
+                step="1"
+                value="300"
+              />
+            </label>
+          </div>
+          <h3>Conventional Rate Reset Schedule (month, annual %)</h3>
+          <textarea id="convResetSchedule" rows="4"></textarea>
+          <h3>Conventional Prepayments (month, amount)</h3>
+          <textarea id="convPrepaymentSchedule" rows="4">12,0</textarea>
+          <h3>Conventional Upfront Fees</h3>
+          <div class="grid">
+            <label
+              >Lender Fees
+              <input
+                id="convLenderFees"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+            <label
+              >Legal Fees (Closing)
+              <input
+                id="convLegalFeesClosing"
+                type="number"
+                min="0"
+                step="100"
+                value="5000"
+              />
+            </label>
+            <label
+              >Appraisal / Inspection Fees
+              <input
+                id="convAppraisalFees"
+                type="number"
+                min="0"
+                step="50"
+                value="550"
+              />
+            </label>
+            <label
+              >Mortgage Insurance Premium
+              <input
+                id="convInsurancePremium"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+            <label
+              >Other Conventional Closing Costs
+              <input
+                id="convOtherClosingCosts"
+                type="number"
+                min="0"
+                step="100"
+                value="0"
+              />
+            </label>
+          </div>
         </div>
         <div class="tabs" role="tablist" aria-label="Result Tabs">
           <button
